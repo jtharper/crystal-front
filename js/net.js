@@ -130,6 +130,7 @@ function olHost(){netConnect(olNewCode(),'host')}
 function olJoin(){const c=$('#olCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.length<4){olHint('Enter the code your friend gave you.');return}netConnect(c,'join')}
 function olRender(){
   const room=NET.state==='lobby'||NET.state==='connecting';
+  $('#olBack').textContent=room?'Leave game':'Main menu';
   $('#olStart').hidden=room;$('#olRoom').hidden=!room;
   $('#olCodeTxt').textContent=NET.code||'-----';
   if(NET.state==='connecting'){olHint(NET.role==='host'?'Creating game...':'Joining game...');$('#olGo').hidden=true;$('#olRows').innerHTML='';return}
@@ -150,7 +151,9 @@ function olRender(){
   olPing();
 }
 {
-  $('#onlineBtn').addEventListener('click',()=>{audioInit();sfx('click');olOpen()});
+  /* the Play lobby has two tabs: Skirmish (vs computer) and Online 1v1 */
+  for(const b of document.querySelectorAll('.lbMode'))b.addEventListener('click',()=>{const m=b.dataset.m;audioInit();
+    if(m==='online'){if($('#pOnline').hidden){sfx('click');olOpen()}}else if($('#pSetup').hidden){sfx('click');netReset();showPanel('setup')}});
   $('#olBack').addEventListener('click',()=>{sfx('click');if(NET.state==='lobby'||NET.state==='connecting'){netReset();olRender();olHint('')}else{netReset();showPanel('home')}});
   $('#olHost').addEventListener('click',()=>{sfx('click');olHost()});
   $('#olJoin').addEventListener('click',()=>{sfx('click');olJoin()});

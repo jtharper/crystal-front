@@ -33,7 +33,7 @@ function newWorld0(sd0,facs,opt){
   for(let c=0;c<4;c++){const [x,y]=cornerBox(c,sp0[0],sp0[1],2,2),p=free4(x,y)?[x,y]:spot(x,y);if(p)addBld('spike',-1,p[0],p[1],0)}
   for(const [x,y] of LY.radars||[[MW/2-1,17]]){const p=spot(x,y);if(!p)continue;addBld('radar',-1,p[0],p[1],0);
     const [mx,my]=cornerBox(1,p[0],p[1],2,2);if(!LY.radarOnce&&(mx!==p[0]||my!==p[1])&&[0,1,2,3].every(k=>{const i=(my+(k>>1))*MW+mx+(k&1);return !ter[i]&&!occ[i]&&!(cry[i]>0)}))addBld('radar',-1,mx,my,0)}
-  vis=new Uint8Array(MW*MH);cryMem=cry.slice();cryMax=cry.slice();cryIdle=new Float32Array(MW*MH);memB.clear();
+  vis=new Uint8Array(MW*MH);visT=new Float32Array(MW*MH).fill(-1e9);cryMem=cry.slice();cryMax=cry.slice();cryIdle=new Float32Array(MW*MH);memB.clear();
   if(!fogC||fogC.width!==MW){fogC=document.createElement('canvas');fogC.width=MW;fogC.height=MH;fogX=fogC.getContext('2d');fogImg=fogX.createImageData(MW,MH)}
 }
 let menuSeed=0;
@@ -164,18 +164,22 @@ function update(dt){
     if(!sides.some(sd=>enemy(ME,sd.id)&&alive(sd)))endGame(true);
     else if(!alive(sides[ME]))endGame(false)}
 }
-let REVEAL=false;
+let REVEAL=false,visT=null;
+/* fog of war (what this player sees; never used by game rules): ground stays in view FOG_LINGER seconds after your
+   units move on, then the fog fades back in over FOG_FADE seconds */
+const FOG_LINGER=3,FOG_FADE=2.5;
 function updFog(){
   for(let i=0;i<vis.length;i++)if(vis[i]===2)vis[i]=1;
-  const rev=(e,r)=>{const cx=(e.x/T)|0,cy=(e.y/T)|0;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>r*r+r)continue;const x=cx+dx,y=cy+dy;if(x>=0&&y>=0&&x<MW&&y<MH)vis[y*MW+x]=2}};
+  const rev=(e,r)=>{const cx=(e.x/T)|0,cy=(e.y/T)|0;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>r*r+r)continue;const x=cx+dx,y=cy+dy;if(x>=0&&y>=0&&x<MW&&y<MH){vis[y*MW+x]=2;visT[y*MW+x]=time}}};
   for(const u of units)if(ally(ME,u.side))rev(u,UDEF[u.type].vis);
   for(const b of blds)if(ally(ME,b.side))rev(b,BDEF[b.type].vis);
   if(REVEAL)vis.fill(2);
+  for(let i=0;i<vis.length;i++)if(vis[i]===1&&time-visT[i]<FOG_LINGER)vis[i]=2;
   for(const b of blds)if(b.side!==ME&&visNow(b)){b.seen=true;remember(b)}
   for(const [id,m] of memB)if(visNow(m)&&!blds.some(b=>b.id===id&&!b.dead))forget(id);
   for(let i=0;i<vis.length;i++)if(vis[i]===2)cryMem[i]=cry[i];
   const d=fogImg.data,vd=visImg.data;
-  for(let i=0;i<vis.length;i++){const v=vis[i]===2;d[i*4]=10;d[i*4+1]=13;d[i*4+2]=13;d[i*4+3]=v?0:120;vd[i*4]=vd[i*4+1]=vd[i*4+2]=v?255:0;vd[i*4+3]=255}
+  for(let i=0;i<vis.length;i++){const a=vis[i]===2?0:Math.min(1,Math.max(0,(time-visT[i]-FOG_LINGER)/FOG_FADE));d[i*4]=10;d[i*4+1]=13;d[i*4+2]=13;d[i*4+3]=120*a;vd[i*4]=vd[i*4+1]=vd[i*4+2]=255*(1-a);vd[i*4+3]=255}
   fogX.putImageData(fogImg,0,0);visX.putImageData(visImg,0,0);visTex.needsUpdate=true;
   refreshInst();
 }

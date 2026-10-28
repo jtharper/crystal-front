@@ -179,7 +179,7 @@ let lastGrp=null;
 addEventListener('keydown',e=>{
   if(e.target.tagName==='BUTTON'&&(e.key===' '||e.key==='Enter'))return;
   const k=e.key.toLowerCase();keys[k]=true;
-  if(k==='escape'&&state==='menu'){if(!$('#colPop').hidden)$('#colPop').hidden=true;else if($('.card').classList.contains('setup')){showPanel('home');sfx('click')}return}
+  if(k==='escape'&&state==='menu'){if(!$('#colPop').hidden)$('#colPop').hidden=true;else if($('.card').classList.contains('setup')){if(!$('#pOnline').hidden)netReset();showPanel('home');sfx('click')}return}
   if(state!=='play')return;
   if(k==='escape'){if(!escEl.hidden&&!$('#escConfirm').hidden)escBack();else if(escEl.hidden&&(place||mode)){place=null;mode=null}else togglePause();return}
   if(!escEl.hidden)return;
