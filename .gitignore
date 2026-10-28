@@ -1,0 +1,9 @@
+node_modules/
+dist/
+# derived from the .blend sources / build output
+models/*.glb
+models/*.png
+*.blend1
+.DS_Store
+Thumbs.db
+.v2bak/
