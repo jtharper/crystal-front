@@ -1,0 +1,15 @@
+{
+  "name": "crystal-front",
+  "private": true,
+  "description": "Crystal Front - browser RTS",
+  "scripts": {
+    "build": "node tools/build-web.mjs",
+    "serve": "npx --yes http-server dist/web -p 8080 -c-1"
+  },
+  "devDependencies": {
+    "three": "0.128.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
