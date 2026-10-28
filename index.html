@@ -99,7 +99,6 @@
         <p id="ovText" class="tag">Harvest. Build. Conquer.</p>
         <div id="pHome" class="pnl">
           <button id="playBtn" class="bigbtn" type="button">Play</button>
-          <button id="onlineBtn" class="olBtn" type="button">Online 1v1</button>
           <details class="howto">
             <summary>How to play</summary>
             <dl class="keys">
@@ -115,7 +114,7 @@
         <div id="pSetup" class="pnl" hidden>
           <div class="lobby" id="lobby">
             <div class="lbHead">
-              <div class="lbTitle">Skirmish</div>
+              <div class="lbModes" role="tablist" aria-label="Game type"><button type="button" role="tab" class="lbMode on" data-m="setup">Skirmish</button><button type="button" role="tab" class="lbMode" data-m="online">Online 1v1</button></div>
               <label class="lbName"><span>Commander</span><input id="cmdName" maxlength="16" autocomplete="off" spellcheck="false" enterkeyhint="done"></label>
               <div class="lbTabs" role="tablist"><button type="button" role="tab" data-t="map" class="on">Map</button><button type="button" role="tab" data-t="rules">Rules</button></div>
             </div>
@@ -139,7 +138,7 @@
         <div id="pOnline" class="pnl" hidden>
           <div class="lobby olLobby" id="olLobby">
             <div class="lbHead">
-              <div class="lbTitle">Online 1v1</div>
+              <div class="lbModes" role="tablist" aria-label="Game type"><button type="button" role="tab" class="lbMode" data-m="setup">Skirmish</button><button type="button" role="tab" class="lbMode on" data-m="online">Online 1v1</button></div>
               <label class="lbName"><span>Commander</span><input id="olName" maxlength="16" autocomplete="off" spellcheck="false" enterkeyhint="done"></label>
             </div>
             <div id="olStart" class="olStart">
@@ -157,7 +156,7 @@
                 <div id="olRows"></div>
               </div>
             </div>
-            <div class="lbFoot"><button id="olBack" class="lbBtn" type="button">Back</button><span class="lbHint" id="olHint"></span><button id="olGo" class="lbBtn play" type="button" hidden>Start</button></div>
+            <div class="lbFoot"><button id="olBack" class="lbBtn" type="button">Main menu</button><span class="lbHint" id="olHint"></span><button id="olGo" class="lbBtn play" type="button" hidden>Start</button></div>
           </div>
         </div>
         <div id="pEnd" class="pnl" hidden>

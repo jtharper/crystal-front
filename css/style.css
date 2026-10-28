@@ -608,7 +608,6 @@ body.online #escRestart{display:none}
 #pOnline{width:100%}
 .card:has(#pOnline:not([hidden])){width:100%;max-width:none}
 .card:has(#pOnline:not([hidden])) .logo,.card:has(#pOnline:not([hidden])) .tag{display:none}
-.olLobby{width:min(760px,calc(100vw - var(--sl) - var(--sr) - 10px))}
 .olStart{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .olCol{min-width:0}
 .olJoinRow .lbBtn{min-width:96px;padding:0 16px}
@@ -619,3 +618,15 @@ body.online #escRestart{display:none}
 #olMaps .lbItem{display:flex;align-items:center;padding:0 10px;flex:none}
 .olMain .prevBox{height:calc(100% - 18px)}
 .olMain>.lbPanel{min-height:0;overflow:hidden}.olMain .lbPrev{display:flex;flex-direction:column;align-items:center}
+/* Play lobby tabs: Skirmish | Online 1v1 */
+.lbModes{display:flex;gap:2px;flex:none}
+.lbMode{height:30px;border:0;padding:0 20px 0 14px;font:700 14px var(--display);letter-spacing:.26em;text-transform:uppercase;color:var(--dim);cursor:pointer;
+  background:rgba(255,255,255,.05);clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.lbMode+.lbMode{margin-left:-8px;padding-left:20px;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)}
+.lbMode.on{color:#fff;background:linear-gradient(90deg,var(--d85),var(--d40));cursor:default}
+.lbMode:not(.on):hover{color:#fff;background:rgba(255,255,255,.1)}
+@media (max-height:420px){.lbMode{height:26px;font-size:12px}}
+@media (max-width:720px){.lbMode{letter-spacing:.14em;padding:0 14px 0 10px}.lbMode+.lbMode{padding-left:16px}}
+/* keep the Play lobby the same height on both tabs */
+.olStart{min-height:calc(clamp(126px,34vh,210px) + clamp(120px,30vh,176px))}
+.olCol p{text-align:left}

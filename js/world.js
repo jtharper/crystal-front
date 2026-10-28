@@ -406,27 +406,48 @@ function updDebris(dt){
     if(d.life<0){m.scale.multiplyScalar(.9);if(m.scale.x<.3){world.remove(m);debris.splice(i,1)}}
   }
 }
+/* burnt copy of a material: same shader (no new compile), darkened, lights out */
+const burntCache=new Map(),RUBBLE_T=40,_noE=[0,1,2,3,4,5].map(()=>new THREE.Color(0,0,0)),_ash=new THREE.Color(.16,.15,.14);
+function burnt(m){
+  if(!m)return MT.char;if(Array.isArray(m))return m.map(burnt);let b=burntCache.get(m);if(b)return b;
+  b=m.clone();b.onBeforeCompile=m.onBeforeCompile;b.customProgramCacheKey=m.customProgramCacheKey;
+  if(b.color)b.color.lerp(_ash,.55).multiplyScalar(.5);if(b.emissive)b.emissive.setRGB(0,0,0);if('emissiveIntensity' in b)b.emissiveIntensity=0;
+  /* merged meshes carry team colour / glow per vertex: wash those out too (same shader, own uniforms) */
+  if(String(m.customProgramCacheKey&&m.customProgramCacheKey()).startsWith('uber')){const ob=m.onBeforeCompile;b.onBeforeCompile=sh=>{ob(sh);sh.uniforms.uPulse={value:0};sh.uniforms.uFE={value:_noE};
+    sh.uniforms.uFC={value:sh.uniforms.uFC.value.map(c=>c.clone().lerp(_ash,.7))}}}
+  b.userData={...m.userData,burnt:true};burntCache.set(m,b);return b;
+}
+/* a destroyed building keeps its own model: burnt, sagging, a few pieces knocked askew. Its ground pad stays put. */
+function bldRubble(r,d){
+  const g=r.g,pads=[];
+  g.traverse(o=>{if(!o.isMesh)return;if(o.userData.decal){pads.push(o);return}o.material=burnt(o.material)});
+  for(const o of pads)entGroup.attach(o);d.pads=pads;
+  const h=(BTOP[d.type]||40);d.sink=h*.3;d.rx=(vr()<.5?-1:1)*(.05+vr()*.07);d.rz=(vr()-.5)*.16;
+  /* knock some of the smaller parts (chimneys, dishes, tanks, cranes...) out of line */
+  const box=new THREE.Box3(),kids=g.children.filter(o=>!o.userData.decal),sz=kids.map(o=>box.setFromObject(o).getSize(new THREE.Vector3()).length()),big=Math.max(1,...sz);
+  d.parts=[];kids.forEach((o,i)=>{if(sz[i]>big*.6||vr()<.3)return;d.parts.push({o,r0x:o.rotation.x,r0z:o.rotation.z,y0:o.position.y,rx:(vr()<.5?-1:1)*(.25+vr()*.45),rz:(vr()-.5)*.6,dy:h*(.1+vr()*.25)})});
+}
 function startDeath(r){
   const e=r.e;if(e.silent){entGroup.remove(r.g);return}
   if(!r.g.visible){entGroup.remove(r.g);return}
   if(e.sold){dying.push({g:r.g,e,t:0,k:'b',sold:true,y0:r.g.position.y});return}
   {const dl=[];r.g.traverse(o=>{if(o.name==='dome')dl.push(o)});for(const o of dl)o.parent.remove(o)}
-  r.g.traverse(o=>{if(o.isMesh)o.material=MT.char});
   const d={g:r.g,e,t:0,k:e.k,type:e.type,fall:vr()<.5?1:-1,tilt:(vr()-.5)*.35,tur:null,y0:r.g.position.y,x0:r.g.position.x,z0:r.g.position.z};
+  if(e.k==='b')bldRubble(r,d);else r.g.traverse(o=>{if(o.isMesh)o.material=MT.char});
   if(e.k==='u'){
     if(e.type==='tank'||e.type==='harv'||e.type==='htank'||e.type==='mlrs'){
       if(r.turret){const t=r.turret;entGroup.attach(t);d.tur={m:t,vx:(vr()-.5)*50,vz:(vr()-.5)*50,vy:130+vr()*60,sp:(vr()-.5)*10}}
       spawnDebris(e.x,d.y0+8,e.y,7,120,5,[MT.char,MT.steel,TD[sides[e.side].col]]);
     }else spawnDebris(e.x,d.y0+6,e.y,3,60,2.4,[MT.char,MT.skin]);
   }else{
-    spawnDebris(e.x,d.y0+20,e.y,14+e.w*e.h*2,190,7,[MT.char,MT.plate2,MT.steel,TD[sides[e.side].col]]);
+    spawnDebris(e.x,d.y0+20,e.y,8+e.w*e.h,170,5,[burnt(MT.plate2),burnt(MT.steel),MT.char,burnt(TD[sides[e.side].col]||MT.gun)]);
   }
   dying.push(d);
 }
 function updDying(dt){
   for(let i=dying.length-1;i>=0;i--){
     const d=dying[i],g=d.g;d.t+=dt;
-    const rm=()=>{entGroup.remove(g);g.traverse(o=>{if(o.userData.decal)o.geometry.dispose()});if(d.tur)entGroup.remove(d.tur.m);dying.splice(i,1)};
+    const rm=()=>{entGroup.remove(g);g.traverse(o=>{if(o.userData.decal)o.geometry.dispose()});for(const o of d.pads||[]){entGroup.remove(o);o.geometry.dispose()}if(d.tur)entGroup.remove(d.tur.m);dying.splice(i,1)};
     if(d.k==='u'){
       if(d.type==='tank'||d.type==='harv'||d.type==='htank'||d.type==='mlrs'){
         g.rotation.z=d.tilt*Math.min(1,d.t*3);
@@ -443,11 +464,14 @@ function updDying(dt){
     }else if(d.sold){
       g.position.y=d.y0-d.t*d.t*9;g.scale.y=Math.max(.05,1-d.t*.35);if(d.t>2.6)rm();
     }else{
-      const k=Math.min(1,d.t/1.1);
-      g.scale.y=1-.8*k;g.position.x=d.x0+(vr()-.5)*(1-k)*4;g.position.z=d.z0+(vr()-.5)*(1-k)*4;
-      if(d.t<8&&vr()<dt*9)fxs.push({t:'smoke',x:d.e.x+(vr()-.5)*d.e.w*T*.7,y:d.e.y+(vr()-.5)*d.e.h*T*.7,age:0,life:1.5,r:9});
-      if(d.t>14)g.position.y-=dt*5;
-      if(d.t>18)rm();
+      /* the building itself sags, leans and loses pieces, then stays as a burnt shell before sinking away */
+      if(d.t<RUBBLE_T&&(d.chk=(d.chk||0)-dt)<=0){d.chk=.5;const o=d.e;if(blds.some(b=>!b.dead&&b!==o&&b.tx<o.tx+o.w&&b.tx+b.w>o.tx&&b.ty<o.ty+o.h&&b.ty+b.h>o.ty))d.t=RUBBLE_T}
+      const k=Math.min(1,d.t/1.6),s=k*k*(3-2*k),sh=(1-k)*3.5;
+      g.position.set(d.x0+(vr()-.5)*sh,d.y0-d.sink*s-(d.t>RUBBLE_T?(d.t-RUBBLE_T)*5:0),d.z0+(vr()-.5)*sh);
+      g.rotation.x=d.rx*s;g.rotation.z=d.rz*s;g.scale.y=1-.36*s;
+      for(const p of d.parts){p.o.rotation.x=p.r0x+p.rx*s;p.o.rotation.z=p.r0z+p.rz*s;p.o.position.y=p.y0-p.dy*s}
+      if(d.t<10&&vr()<dt*(d.t<3?10:4))fxs.push({t:'smoke',x:d.e.x+(vr()-.5)*d.e.w*T*.6,y:d.e.y+(vr()-.5)*d.e.h*T*.6,age:0,life:1.6,r:9});
+      if(d.t>RUBBLE_T+4)rm();
     }
   }
 }
