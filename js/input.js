@@ -21,27 +21,13 @@ function groupDests(list,wx,wy){
 }
 function ping(x,y,col){fxs.push({t:'ping',x,y,age:0,life:.5,r:18,col})}
 function command(sx,sy,amove){
-  const us=sel.filter(e=>e.k==='u'&&!e.dead&&e.side===0);if(!us.length)return;
+  const us=sel.filter(e=>e.k==='u'&&!e.dead&&e.side===ME);if(!us.length)return;
   sfx('ack');
-  const w0=screenToWorld(sx,sy);if(!w0)return;const wx=w0.x,wy=w0.y;
-  const tg=amove?null:pickScreen(sx,sy,e=>e.side!==0&&!ally(0,e.side)&&!e.dead&&seenBy0(e));
-  if(tg){
-    const capB=tg.k==='b';
-    for(const u of us){
-      if(UDEF[u.type].eng){if(capB){u.cap=tg;u.atk=null;u.path=null;u.amove=null;pathToward(u,tg)}else{u.cap=null;setPath(u,tg.x,tg.y)}}
-      else if(capB&&BDEF[tg.type].cap){u.atk=null;setPath(u,tg.x,tg.y)}
-      else if(UDEF[u.type].dmg){u.atk=tg;u.path=null;u.amove=null;u.hold=false}else{u.atk=null;setPath(u,tg.x,tg.y);u.hold=true}}
-    ping(tg.x,tg.y,us.some(u=>UDEF[u.type].eng)&&capB?'#5fd68a':'#ff5b44');return;
-  }
-  const i=ti(wx,wy);
-  if(!amove&&cry[i]>0){
-    const hs=us.filter(u=>u.type==='harv'),rest=us.filter(u=>u.type!=='harv');
-    for(const u of hs){relDock(u);u.hs='seek';u.hold=false;u.path=null;setPath(u,wx,wy)}
-    if(rest.length)moveGroup(rest,wx,wy,false);
-    ping(wx,wy,'#c46bff');return;
-  }
-  moveGroup(us,wx,wy,amove);
-  ping(wx,wy,amove?'#ff5b44':'#5fd68a');
+  const w0=screenToWorld(sx,sy);if(!w0)return;const wx=r1(w0.x),wy=r1(w0.y);
+  const tg=amove?null:pickScreen(sx,sy,e=>e.side!==ME&&!ally(ME,e.side)&&!e.dead&&seenBy0(e));
+  issue({c:'go',u:us.map(u=>u.id),x:wx,y:wy,a:amove?1:0,t:tg?tg.id:null});
+  if(tg){ping(tg.x,tg.y,us.some(u=>UDEF[u.type].eng)&&tg.k==='b'?'#5fd68a':'#ff5b44');return}
+  ping(wx,wy,!amove&&cry[ti(wx,wy)]>0?'#c46bff':amove?'#ff5b44':'#5fd68a');
 }
 function moveGroup(us,wx,wy,amove){
   groupDests(us,wx,wy);
@@ -72,11 +58,11 @@ function pickScreen(sx,sy,pred){
   return null;
 }
 function selectAt(sx,sy,add,dbl){
-  const e=pickScreen(sx,sy,e=>e.side===0&&!e.dead);
+  const e=pickScreen(sx,sy,e=>e.side===ME&&!e.dead);
   if(!add)sel=[];
   if(!e)return;
   if(dbl&&e.k==='u'){
-    for(const u of units){if(u.side!==0||u.type!==e.type||u.dead||sel.includes(u))continue;const p=toScreen(u.x,gH(u.x,u.y)+9,u.y);if(!p.behind&&p.x>=0&&p.x<=W&&p.y>=0&&p.y<=H)sel.push(u)}
+    for(const u of units){if(u.side!==ME||u.type!==e.type||u.dead||sel.includes(u))continue;const p=toScreen(u.x,gH(u.x,u.y)+9,u.y);if(!p.behind&&p.x>=0&&p.x<=W&&p.y>=0&&p.y<=H)sel.push(u)}
     sfx('click');return;
   }
   const i=sel.indexOf(e);if(i>=0)sel.splice(i,1);else sel.push(e);
@@ -85,7 +71,7 @@ function selectAt(sx,sy,add,dbl){
 function boxSelect(x0,y0,x1,y1,add){
   const l=Math.min(x0,x1),r=Math.max(x0,x1),t=Math.min(y0,y1),b=Math.max(y0,y1);
   if(!add)sel=[];
-  const got=[];for(const u of units){if(u.side!==0||u.dead||sel.includes(u))continue;const p=toScreen(u.x,gH(u.x,u.y)+9,u.y);if(!p.behind&&p.x>=l&&p.x<=r&&p.y>=t&&p.y<=b)got.push(u)}
+  const got=[];for(const u of units){if(u.side!==ME||u.dead||sel.includes(u))continue;const p=toScreen(u.x,gH(u.x,u.y)+9,u.y);if(!p.behind&&p.x>=l&&p.x<=r&&p.y>=t&&p.y<=b)got.push(u)}
   const army=got.filter(u=>u.type!=='harv');for(const u of (army.length?army:got))sel.push(u);
   if(sel.length)sfx('click');
 }
@@ -96,11 +82,11 @@ function placeSpot(sx,sy,t,rot){
 let lastRot=0;
 function rotatePlace(){if(!place)return;place.rot=(place.rot+1)%4;lastRot=place.rot;sfx('click')}
 function tryPlace(sx,sy){
-  const s=sides[0],t=place.t,sp=placeSpot(sx,sy,t,place.rot);
+  const s=sides[ME],t=place.t,sp=placeSpot(sx,sy,t,place.rot);
   if(s[RD(CAT[t])]!==t){place=null;return}
   if(!sp)return;
-  if(!validPlace(0,t,sp.tx,sp.ty,0,place.rot)){msg(inBuildZone(0,sp.tx,sp.ty,dims(t,place.rot).w,dims(t,place.rot).h)?'Cannot build here: the ground is blocked.':'Too far from your Command Yard. Build inside the marked zone.','bad');sfx('err');return}
-  placeBuilding(s,t,sp.tx,sp.ty,place.rot);s[RD(CAT[t])]=null;place=null;sfx('place');
+  if(!validPlace(ME,t,sp.tx,sp.ty,0,place.rot)){msg(inBuildZone(ME,sp.tx,sp.ty,dims(t,place.rot).w,dims(t,place.rot).h)?'Cannot build here: the ground is blocked.':'Too far from your Command Yard. Build inside the marked zone.','bad');sfx('err');return}
+  issue({c:'place',t,x:sp.tx,y:sp.ty,r:place.rot});place=null;sfx('place');
 }
 const posOf=e=>{const r=cvs.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}};
 cvs.addEventListener('contextmenu',e=>e.preventDefault());
@@ -123,7 +109,7 @@ cvs.addEventListener('pointerdown',e=>{
     command(p.x,p.y,false);return;
   }
   drag={sx:p.x,sy:p.y,x:p.x,y:p.y,shift:e.shiftKey,touch:e.pointerType!=='mouse',panned:false,lx:p.x,ly:p.y,box:e.pointerType!=='mouse'&&boxMode,gx:mouse.x,gy:mouse.y};
-  if(drag.touch&&!place&&!mode&&!drag.box){clearTimeout(lpT);lpT=setTimeout(()=>{const d=drag;if(d&&!d.panned&&!place&&!mode&&sel.some(u=>u.k==='u'&&u.side===0&&!u.dead)){command(d.x,d.y,true);d.lp=true;sfx('ack');try{navigator.vibrate&&navigator.vibrate(18)}catch(err){}}},520)}
+  if(drag.touch&&!place&&!mode&&!drag.box){clearTimeout(lpT);lpT=setTimeout(()=>{const d=drag;if(d&&!d.panned&&!place&&!mode&&sel.some(u=>u.k==='u'&&u.side===ME&&!u.dead)){command(d.x,d.y,true);d.lp=true;sfx('ack');try{navigator.vibrate&&navigator.vibrate(18)}catch(err){}}},520)}
 });
 cvs.addEventListener('pointermove',e=>{
   const p=posOf(e);ptrMouse=e.pointerType==='mouse';
@@ -156,7 +142,7 @@ cvs.addEventListener('pointerup',e=>{
     if(d.box){if(Math.hypot(d.x-d.sx,d.y-d.sy)>10)boxSelect(d.sx,d.sy,d.x,d.y,false);else selectAt(d.x,d.y,false,false);boxMode=false;return}
     if(d.panned)return;
     const now=performance.now(),dbl=!!lastTap&&now-lastTap.t<340&&Math.hypot(d.x-lastTap.x,d.y-lastTap.y)<30;lastTap={t:now,x:d.x,y:d.y};
-    const own=pickScreen(d.x,d.y,en=>en.side===0&&!en.dead);
+    const own=pickScreen(d.x,d.y,en=>en.side===ME&&!en.dead);
     if(mode==='rift'){riftAt(d.x,d.y);mode=null}
     else if(mode==='repair')repairAt(d.x,d.y);
     else if(mode==='sell')sellAt(d.x,d.y);
@@ -188,7 +174,7 @@ mm.addEventListener('pointerdown',e=>{
 });
 mm.addEventListener('pointermove',e=>{if(!mmDrag)return;const p=mmPos(e);cam.x=p.x;cam.y=p.y;clampCam()});
 mm.addEventListener('pointerup',()=>{mmDrag=false});
-function moveGroupWorld(wx,wy){const us=sel.filter(e=>e.k==='u'&&!e.dead&&e.side===0);if(!us.length)return;moveGroup(us,wx,wy,false);ping(wx,wy,'#5fd68a')}
+function moveGroupWorld(wx,wy){const us=sel.filter(e=>e.k==='u'&&!e.dead&&e.side===ME);if(!us.length)return;issue({c:'go',u:us.map(u=>u.id),x:r1(wx),y:r1(wy),a:0,t:null});ping(wx,wy,'#5fd68a')}
 let lastGrp=null;
 addEventListener('keydown',e=>{
   if(e.target.tagName==='BUTTON'&&(e.key===' '||e.key==='Enter'))return;
@@ -199,15 +185,15 @@ addEventListener('keydown',e=>{
   if(!escEl.hidden)return;
   if(k==='r'&&place){rotatePlace()}
   else if(k==='a'&&(e.ctrlKey||e.metaKey)){e.preventDefault();selectArmy()}
-  else if(k==='t'&&sel.some(e=>e.type==='rift'&&e.side===0)){place=null;mode='rift'}
+  else if(k==='t'&&sel.some(e=>e.type==='rift'&&e.side===ME)){place=null;mode='rift'}
   else if(k==='g'){toggleRepair()}
   else if(k==='x'){toggleSell()}
   else if(k===' '&&alerts.length){const a=alerts[alerts.length-1];cam.x=a.x;cam.y=a.y;clampCam();e.preventDefault()}
   else if(k==='a'&&sel.some(s=>s.k==='u')){mode='amove'}
-  else if(k==='s'){for(const u of sel)if(u.k==='u'){u.path=null;u.atk=null;u.amove=null;u.hold=false}}
+  else if(k==='s'){const us=sel.filter(u=>u.k==='u'&&u.side===ME&&!u.dead);if(us.length){issue({c:'stop',u:us.map(u=>u.id)});sfx('ack')}}
   else if(k==='p')togglePause();
   else if(k==='m')toggleMute();
-  else if(k==='h'){const y=blds.find(b=>b.side===0&&b.type==='yard');if(y){cam.x=y.x;cam.y=y.y;clampCam()}}
+  else if(k==='h'){const y=blds.find(b=>b.side===ME&&b.type==='yard');if(y){cam.x=y.x;cam.y=y.y;clampCam()}}
   else if(/^[1-9]$/.test(k)){
     if(e.ctrlKey||e.metaKey){groups[k]=sel.slice();e.preventDefault();msg('Group '+k+' set','')}
     else if(groups[k]){sel=groups[k].filter(x=>!x.dead);if(sel.length){const c=sel[0];if(lastGrp===k){cam.x=c.x;cam.y=c.y;clampCam()}lastGrp=k}}
@@ -218,32 +204,34 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
 const escEl=$('#escMenu');let escAction=null;
 function syncEscSound(){$('#escSound').textContent='Sound: '+(muted?'Off':'On')}
-function openEsc(){if(state!=='play')return;paused=true;drag=null;escBack();syncEscSound();escEl.hidden=false;$('#escResume').focus()}
+function openEsc(){if(state!=='play')return;paused=!NET.on;drag=null;escBack();syncEscSound();escEl.hidden=false;$('#escResume').focus()}
 function closeEsc(){escEl.hidden=true;paused=false}
 function escBack(){$('#escMain').hidden=false;$('#escConfirm').hidden=true;escAction=null}
 function escAsk(q,act){$('#escQ').textContent=q;$('#escMain').hidden=true;$('#escConfirm').hidden=false;escAction=act;$('#escNo').focus()}
 function toggleSell(){if(state!=='play')return;place=null;mode=mode==='sell'?null:'sell';sfx('click')}
-function sellAt(sx,sy){const b=pickScreen(sx,sy,e=>e.k==='b'&&e.side===0&&!e.dead);if(b){sellBld(b);mode=null}}
-function sellBld(b){
-  if(b&&BDEF[b.type].cap){msg("This structure can't be sold",'bad');sfx('err');return}
-  if(!b||b.dead||b.side!==0||state!=='play')return;
+function sellAt(sx,sy){const b=pickScreen(sx,sy,e=>e.k==='b'&&e.side===ME&&!e.dead);if(!b)return;
+  if(BDEF[b.type].cap){msg("This structure can't be sold",'bad');sfx('err');return}
   if(b.type==='yard'){msg("The Command Yard can't be sold.",'bad');sfx('err');return}
+  issue({c:'sell',b:b.id});mode=null}
+/* simulation side of selling (runs on every player's game at the same step) */
+function sellBld(b,side){
+  if(!b||b.dead||b.side!==side||state!=='play'||BDEF[b.type].cap||b.type==='yard')return;
   const val=Math.floor((BDEF[b.type].cost||0)*.5),sd=sides[b.side];
   sd.credits+=val;if(b.q&&b.q.length)sd.credits+=b.q.reduce((a,i)=>a+i.paid,0);
   b.sold=true;b.repairing=false;b.dead=true;
   for(let y=b.ty;y<b.ty+b.h;y++)for(let x=b.tx;x<b.tx+b.w;x++)occ[y*MW+x]=0;
-  for(let i=0;i<7;i++)fxs.push({t:'dust',x:b.x+(rng()-.5)*b.w*T*.8,y:b.y+(rng()-.5)*b.h*T*.8,h:3,age:-rng()*.5,life:1.8,r:11});
-  msg(`Sold ${BDEF[b.type].name} for $${val}.`,'ok');sfx('place');say('Structure sold','sell',.5);
+  for(let i=0;i<7;i++)fxs.push({t:'dust',x:b.x+(vr()-.5)*b.w*T*.8,y:b.y+(vr()-.5)*b.h*T*.8,h:3,age:-vr()*.5,life:1.8,r:11});
+  if(side===ME){msg(`Sold ${BDEF[b.type].name} for $${val}.`,'ok');sfx('place');say('Structure sold','sell',.5)}
 }
 $('#sellBtn').addEventListener('click',toggleSell);
 document.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();place=null;mode=null;sfx('click')}));
-const myArmy=()=>sel.filter(u=>u.k==='u'&&u.side===0&&!u.dead);
+const myArmy=()=>sel.filter(u=>u.k==='u'&&u.side===ME&&!u.dead);
 $('#tbBox').addEventListener('click',()=>{boxMode=!boxMode;sfx('click')});
-const selectArmy=()=>{if(state!=='play')return;place=null;mode=null;sel=units.filter(u=>u.side===0&&!u.dead&&u.type!=='harv');updSel();sfx(sel.length?'ack':'err');if(!sel.length)msg('No army to select','')};
+const selectArmy=()=>{if(state!=='play')return;place=null;mode=null;sel=units.filter(u=>u.side===ME&&!u.dead&&u.type!=='harv');updSel();sfx(sel.length?'ack':'err');if(!sel.length)msg('No army to select','')};
 $('#tbAll').addEventListener('click',selectArmy);$('#armyBtn').addEventListener('click',selectArmy);
 $('#tbAtk').addEventListener('click',()=>{if(!myArmy().length)return;place=null;mode=mode==='amove'?null:'amove';sfx('click')});
-$('#tbStop').addEventListener('click',()=>{for(const u of myArmy()){u.path=null;u.atk=null;u.amove=null;u.hold=false}sfx('ack')});
-$('#tbHome').addEventListener('click',()=>{const y=blds.find(b=>b.side===0&&b.type==='yard'&&!b.dead)||blds.find(b=>b.side===0&&!b.dead);if(y){cam.x=y.x;cam.y=y.y;clampCam()}});
+$('#tbStop').addEventListener('click',()=>{const us=myArmy();if(us.length)issue({c:'stop',u:us.map(u=>u.id)});sfx('ack')});
+$('#tbHome').addEventListener('click',()=>{const y=blds.find(b=>b.side===ME&&b.type==='yard'&&!b.dead)||blds.find(b=>b.side===ME&&!b.dead);if(y){cam.x=y.x;cam.y=y.y;clampCam()}});
 $('#sideTgl').addEventListener('click',()=>{const off=document.body.classList.toggle('sideOff');$('#sideTgl').innerHTML=off?'&#9664;':'&#9654;';$('#sideTgl').setAttribute('aria-label',off?'Show command panel':'Hide command panel')});
 {const fs=$('#fsBtn'),de=document.documentElement,can=document.fullscreenEnabled||document.webkitFullscreenEnabled;
   if(TOUCH&&can&&(de.requestFullscreen||de.webkitRequestFullscreen)){fs.hidden=false;
@@ -257,20 +245,21 @@ else{$('#repTxt').textContent='Click damaged buildings to repair';$('#sellTxt').
     ['X / G','Sell / repair mode'],['H','Jump to your base'],['Space','Jump to the latest alert'],['Esc / P','Game menu / pause']].map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}
 function toggleRepair(){if(state!=='play')return;place=null;mode=mode==='repair'?null:'repair';sfx('click')}
 function repairAt(sx,sy){
-  const b=pickScreen(sx,sy,e=>e.k==='b'&&e.side===0&&!e.dead);if(!b)return;
+  const b=pickScreen(sx,sy,e=>e.k==='b'&&e.side===ME&&!e.dead);if(!b)return;
   if(b.hp>=b.mhp&&!b.repairing){msg(BDEF[b.type].name+' is not damaged.','');return}
-  b.repairing=!b.repairing;sfx('click');if(b.repairing)msg('Repairing '+BDEF[b.type].name+'.','ok');
+  const on=!b.repairing;issue({c:'repair',b:b.id,on:on?1:0});sfx('click');if(on)msg('Repairing '+BDEF[b.type].name+'.','ok');
 }
 $('#repBtn').addEventListener('click',toggleRepair);
 let alertT=0;function showAlert(){const b=$('#alertBtn');b.hidden=false;clearTimeout(alertT);alertT=setTimeout(()=>{b.hidden=true},5000)}
 function togglePause(){if(state!=='play')return;escEl.hidden?openEsc():closeEsc()}
 function showPanel(n){
-  for(const [k,id] of [['home','#pHome'],['setup','#pSetup'],['end','#pEnd']])$(id).hidden=k!==n;
-  $('.card').classList.toggle('setup',n==='setup');
+  for(const [k,id] of [['home','#pHome'],['setup','#pSetup'],['end','#pEnd'],['online','#pOnline']])$(id).hidden=k!==n;
+  $('.card').classList.toggle('setup',n==='setup'||n==='online');
   $('#ovTitle').hidden=n!=='end';
   if(n==='home'||n==='setup')$('#ovText').textContent='Harvest. Build. Conquer.';
 }
 function exitToMenu(){
+  if(NET.on)netResign();netReset();
   closeEsc();sel=[];place=null;mode=null;
   $('#overlay').hidden=false;showPanel('home');
   menuScene();
@@ -278,7 +267,7 @@ function exitToMenu(){
 $('#escResume').addEventListener('click',closeEsc);
 $('#escSound').addEventListener('click',()=>{toggleMute();syncEscSound()});
 $('#escRestart').addEventListener('click',()=>escAsk('Restart this match?',()=>{closeEsc();startGame(diffKey)}));
-$('#escExit').addEventListener('click',()=>escAsk('Leave this match?',exitToMenu));
+$('#escExit').addEventListener('click',()=>escAsk(NET.on?'Surrender and leave this match?':'Leave this match?',exitToMenu));
 $('#escNo').addEventListener('click',escBack);
 $('#escYes').addEventListener('click',()=>{const a=escAction;escBack();if(a)a()});
 $('#pauseBtn').addEventListener('click',togglePause);

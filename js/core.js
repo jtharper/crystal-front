@@ -138,7 +138,15 @@ let PLAZAS=[],ai,fogT=0,winT=0,fogC,fogX,fogImg,cryMem=null,cryMax=null,cryIdle=
 const memB=new Map(),memG=new Map();
 const keys={};
 
-function seed(s){let a=s>>>0;rng=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* rng() is the GAME random stream: only the simulation may use it (both players' games must draw the same numbers in the same order).
+   Anything cosmetic (effects, scenery, menus) uses vr(). SIMIN>0 while simulation code runs; RNG_GUARD (tests) reports any other use. */
+let SIMIN=0,RNG_GUARD=null;
+/* ME: which side this browser plays (0 offline; 0 or 1 online). Only presentation and input may depend on it, never game rules. */
+let ME=0;
+const vr=()=>Math.random();
+/* the simulation advances in fixed steps of TICK seconds, independent of the screen's frame rate */
+const TICK=1/60;
+function seed(s){let a=s>>>0;rng=()=>{if(RNG_GUARD&&!SIMIN)RNG_GUARD(new Error().stack);a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const ti=(x,y)=>(Math.max(0,Math.min(MH-1,(y/T)|0)))*MW+Math.max(0,Math.min(MW-1,(x/T)|0));
 const tc=i=>({x:(i%MW+.5)*T,y:(((i/MW)|0)+.5)*T});
 const angd=(a,b)=>{let d=(b-a)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return d};

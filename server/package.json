@@ -1,0 +1,12 @@
+{
+  "name": "crystal-front-mp",
+  "private": true,
+  "description": "Crystal Front online relay (Cloudflare Worker + Durable Object)",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.154.0"
+  }
+}

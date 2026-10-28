@@ -35,25 +35,22 @@ for(const c of ['i','v'])$('#sub_'+c).addEventListener('click',e=>{const b=e.tar
 const unlocked={d:false,i:false,v:false};
 function onBuild(t){
   if(state!=='play')return;
-  const s=sides[0],c=CAT[t];
+  const s=sides[ME],c=CAT[t];
   if(isStruct(c)&&s[RD(c)]===t){place={t,rot:lastRot};mode=null;mouse={x:W/2,y:H*.42,in:true};sfx('click');return}
   if(atCap(s,t)){msg('Limit reached: only one '+BDEF[t].name+' allowed.','bad');sfx('err');return}
   if(!canBuild(s,t)){msg('Requires '+((def(t).req||[]).concat(c==='i'?['barracks']:c==='v'?['factory']:[]).map(r=>BDEF[r].name).join(', ')),'bad');sfx('err');return}
-  if(!enqueue(s,t,(c==='i'||c==='v')?curProd(c):null)){msg(c==='b'?'Already building a structure.':c==='d'?'Already building a defense.':'Queue is full.','bad');sfx('err');say('Unable to comply','err',2)}else{sfx('click');say(c==='i'?'Training':'Building','build',.6)}
+  if(isStruct(c)&&s.q[c].length){msg(c==='b'?'Already building a structure.':'Already building a defense.','bad');sfx('err');say('Unable to comply','err',2);return}
+  const cp=(c==='i'||c==='v')?curProd(c):null;if(cp&&prodQ(cp).length>=6){msg('Queue is full.','bad');sfx('err');return}
+  issue({c:'build',t,p:cp?cp.id:null});sfx('click');say(c==='i'?'Training':'Building','build',.6);
 }
 function onCancel(t){
-  const s=sides[0],c=CAT[t];if(state!=='play')return;
-  if(isStruct(c)){
-    if(s[RD(c)]===t){s.credits+=def(t).cost;s[RD(c)]=null;place=null;return}
-    if(s.q[c].length&&s.q[c][0].t===t){s.credits+=s.q[c][0].paid;s.q[c].length=0}
-    return;
-  }
-  const cp=curProd(c);if(!cp)return;const q=prodQ(cp);for(let i=q.length-1;i>=0;i--)if(q[i].t===t){s.credits+=q[i].paid;q.splice(i,1);break}
+  if(state!=='play')return;const c=CAT[t],cp=(c==='i'||c==='v')?curProd(c):null;
+  issue({c:'cancel',t,p:cp?cp.id:null});if(isStruct(c)&&place&&place.t===t)place=null;
 }
 let wasLow=false;
 function updUI(){
   if(!sides||state==='menu')return;
-  const s=sides[0];
+  const s=sides[ME];
   $('#cr').textContent='$'+Math.floor(s.credits).toLocaleString('en-US');
   const f=s.pw?Math.min(1,s.use/s.pw):(s.use?1:0),pb=$('#pmfill');pb.style.width=(s.low?100:f*100)+'%';
   pb.classList.toggle('low',s.low);pb.classList.toggle('warn',!s.low&&f>.85);
@@ -73,7 +70,7 @@ function updUI(){
     const q=(c==='i'||c==='v')?qAll(s,c):s.q[c],q0=q[0]&&LISTS[c].includes(q[0].t)?q[0]:null;tb.querySelector('.tp').style.width=(q0?q0.prog*100:0)+'%';
     tb.classList.toggle('has',isStruct(c)&&!!s[RD(c)]);
   }
-  $('#army').textContent=units.filter(u=>u.side===0&&u.type!=='harv').length;
+  $('#army').textContent=units.filter(u=>u.side===ME&&u.type!=='harv').length;
   for(const t in btn){
     const b=btn[t],c=CAT[t],cp=(c==='i'||c==='v')?curProd(c):null,q=cp?prodQ(cp):(c==='i'||c==='v')?[]:s.q[c],d=def(t);
     const first=q[0]&&q[0].t===t?q[0]:null,n=q.filter(i=>i.t===t).length;
@@ -106,7 +103,7 @@ const ROLE={gren:['Heavy trooper, area damage','Infantry · Buildings','Tanks'],
 let selKey='',selRefs=[];
 let selBarOn=false,selBarOff='';
 function updSel(){
-  const chip=$('#selChip'),bar=$('#selBar'),list=sel.filter(e=>!e.dead&&e.side===0);chip.hidden=true;
+  const chip=$('#selChip'),bar=$('#selBar'),list=sel.filter(e=>!e.dead&&e.side===ME);chip.hidden=true;
   if(!list.length||state!=='play'){bar.hidden=true;selBarOn=false;selKey='';selBarOff='';return}
   const one=list.length===1?list[0]:null,pc=one&&one.k==='b'&&(one.type==='barracks'||one.type==='factory')?(one.type==='barracks'?'i':'v'):null;
   const us=list.filter(e=>e.k==='u'),key=list.map(e=>e.id).join(',');
@@ -135,7 +132,7 @@ function buildSelBar(us){
     const counts={};for(const e of us)counts[e.type]=(counts[e.type]||0)+1;
     const types=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
     sp.innerHTML=`<div class="sbMulti"><div class="sbHead"><span class="sbN">${us.length}</span><span class="lbl">selected</span>
-      <div class="sbTypes">${types.map(([t,n])=>`<button type="button" class="sbType" data-t="${t}"><img alt="" src="${thumb(t,skinOf(0),96)}"><span>${nm(t,0)}</span><b>×${n}</b></button>`).join('')}</div></div>
+      <div class="sbTypes">${types.map(([t,n])=>`<button type="button" class="sbType" data-t="${t}"><img alt="" src="${thumb(t,skinOf(ME),96)}"><span>${nm(t,ME)}</span><b>×${n}</b></button>`).join('')}</div></div>
       <div class="sbCards"></div></div>`+desel;
     const cards=sp.querySelector('.sbCards');
     for(const e of us.slice(0,60)){const b=document.createElement('button');b.type='button';b.className='sbCard';b.title=nm(e.type,e.side);
@@ -155,11 +152,11 @@ function buildSel(list){
       (isB?`<button type="button" class="scBtn" data-a="rep">Repair</button>`:'')+(isB&&e.type!=='yard'?`<button type="button" class="scBtn sell" data-a="sell">Sell $${Math.floor((BDEF[e.type].cost||0)*.5)}</button>`:'')+
       `<button type="button" class="scX" aria-label="Deselect">&#10005;</button>`;
     selRefs.push({e,bar:sp.querySelector('.hpm i'),cargo:e.type==='harv'?sp.querySelector('.hp.cargo i'):null,rep:sp.querySelector('[data-a="rep"]')});
-    const rb=sp.querySelector('[data-a="rep"]');if(rb)rb.addEventListener('click',()=>{if(e.hp>=e.mhp&&!e.repairing){msg(BDEF[e.type].name+' is not damaged','');return}e.repairing=!e.repairing;sfx('click');updSel()});
-    const sb=sp.querySelector('[data-a="sell"]');if(sb)sb.addEventListener('click',()=>{sellBld(e);sel=[];updSel()});
+    const rb=sp.querySelector('[data-a="rep"]');if(rb)rb.addEventListener('click',()=>{if(e.hp>=e.mhp&&!e.repairing){msg(BDEF[e.type].name+' is not damaged','');return}issue({c:'repair',b:e.id,on:e.repairing?0:1});sfx('click');updSel()});
+    const sb=sp.querySelector('[data-a="sell"]');if(sb)sb.addEventListener('click',()=>{if(e.side!==ME||BDEF[e.type].cap)return;issue({c:'sell',b:e.id});sel=[];updSel()});
   }else{
     const counts={};for(const e of list)counts[e.type]=(counts[e.type]||0)+1;
-    const sum=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${nm(t,0)} ×${n}`).join(' · ');
+    const sum=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${nm(t,ME)} ×${n}`).join(' · ');
     sp.innerHTML=`<div class="scCount">${list.length}</div><div class="scMain"><div class="scName">${sum}</div><div class="hp hpm"><i></i></div></div><button type="button" class="scX" aria-label="Deselect">&#10005;</button>`;
     selRefs.push({list,bar:sp.querySelector('.hpm i')});
   }

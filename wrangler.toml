@@ -1,0 +1,10 @@
+# Cloudflare Pages settings for the website (the game itself). Build: npm run build -> dist/web
+# The online relay is a separate Worker in /server; this binding lets /mp/room/<CODE> reach its rooms.
+name = "crystal-front"
+pages_build_output_dir = "dist/web"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+script_name = "crystal-front-mp"

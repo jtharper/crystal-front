@@ -10,7 +10,7 @@ const DOOR=[[0,1],[-1,0],[0,-1],[1,0]];
 function doorPt(b){const r=b.rot||0;return r===0?[b.tx+b.w/2,b.ty+b.h+.5]:r===1?[b.tx-.5,b.ty+b.h/2]:r===2?[b.tx+b.w/2,b.ty-.5]:[b.tx+b.w+.5,b.ty+b.h/2]}
 function addBld(type,side,tx,ty,rot){
   rot=rot||0;const d=dims(type,rot);
-  const b={id:nid++,k:'b',type,side,tx,ty,rot,w:d.w,h:d.h,x:(tx+d.w/2)*T,y:(ty+d.h/2)*T,hp:BDEF[type].hp,mhp:BDEF[type].hp,cool:0,tang:Math.PI/2,flash:0,seen:side===0,cand:null,scan:0};
+  const b={id:nid++,k:'b',type,side,tx,ty,rot,w:d.w,h:d.h,x:(tx+d.w/2)*T,y:(ty+d.h/2)*T,hp:BDEF[type].hp,mhp:BDEF[type].hp,cool:0,tang:Math.PI/2,flash:0,seen:side===ME,cand:null,scan:0};
   for(let y=ty;y<ty+d.h;y++)for(let x=tx;x<tx+d.w;x++)occ[y*MW+x]=2;
   blds.push(b);return b;
 }
@@ -44,7 +44,7 @@ function hurt(e,dmg,from){
   if(e.k==='b'){const sh=shieldFor(e);if(sh){dmg*=.5;sh.sfl=.3}}
   if(e.k==='u'&&UDEF[e.type].stealth)e.revealT=Math.max(e.revealT||0,1.5);
   e.hp-=dmg;e.flash=.1;
-  if(e.side===0&&from&&from.side!==0){
+  if(e.side===ME&&from&&from.side!==ME){
     const near=alerts.find(a=>Math.hypot(a.x-e.x,a.y-e.y)<T*10&&time-a.t<12);
     if(near){near.t=time}else{alerts.push({x:e.x,y:e.y,t:time,t0:time});if(alerts.length>6)alerts.shift();alertPos={x:e.x,y:e.y,t:time};
       if(time-lastAlert>3){lastAlert=time;showAlert();sfx('alert');say(e.k==='b'?'Our base is under attack':'Unit under attack','attack',14)}fxs.push({t:'ping',x:e.x,y:e.y,age:0,life:1.2,r:60,col:'#ff5b44'})}
@@ -113,7 +113,7 @@ function openSpot(x,y,u,taken){
     for(const o of units){if(o===u||o.dead||o.docked)continue;const g=goalOf(o),m=r0+sepR(o);if(Math.abs(g.x-px)<m&&Math.abs(g.y-py)<m&&Math.hypot(g.x-px,g.y-py)<m)return false}
     if(taken)for(const t of taken)if(Math.hypot(t.x-px,t.y-py)<r0+t.r)return false;return true};
   if(clear(x,y))return {x,y};
-  for(let ring=1;ring<9;ring++){const n=Math.max(6,Math.round(ring*6.3)),a0=Math.random()*6.28;
+  for(let ring=1;ring<9;ring++){const n=Math.max(6,Math.round(ring*6.3)),a0=rng()*6.28;
     for(let k=0;k<n;k++){const a=a0+k/n*6.2832,px=x+Math.cos(a)*ring*step,py=y+Math.sin(a)*ring*step;if(clear(px,py))return {x:px,y:py}}}
   return {x,y};
 }
@@ -140,22 +140,22 @@ function moveAlong(u,dt){
 function capture(b,u){
   const old=b.side;b.side=u.side;b.q=[];b.repairing=false;b.doorT=0;b.seen=true;
   if(old>=0&&sides[old]){for(const slot of ['ready','readyD'])if(sides[old][slot]&&b.type==='yard'){} }
-  forget(b.id);if(b.side!==0)remember(b);
+  forget(b.id);if(b.side!==ME)remember(b);
   const r=ents.get(b.id);if(r){entGroup.remove(r.g);ents.delete(b.id)}
   u.dead=true;u.silent=true;sel=sel.filter(e=>e!==u);
   fxs.push({t:'ping',x:b.x,y:b.y,age:0,life:1,r:70,col:'#5fd68a'});sfx('ready');
-  if(u.side===0){msg(BDEF[b.type].name+' captured','ok');say(b.type==='spike'?'Crystal spike captured':b.type==='radar'?'Radar tower captured':'Building captured','cap',1)}
+  if(u.side===ME){msg(BDEF[b.type].name+' captured','ok');say(b.type==='spike'?'Crystal spike captured':b.type==='radar'?'Radar tower captured':'Building captured','cap',1)}
   else if(old===0){msg(BDEF[b.type].name+' lost to the enemy','bad');say('Building lost','cap',1)}
 }
-function isProd(b){return b&&b.k==='b'&&b.side===0&&!b.dead&&(b.type==='barracks'||b.type==='factory')}
-function setRally(b,sx,sy){const w=screenToWorld(sx,sy);if(!w)return;b.rally={x:w.x,y:w.y};ping(w.x,w.y,'#ffd27a');fxs.push({t:'ping',x:w.x,y:w.y,age:0,life:.9,r:40,col:'#ffd27a'});sfx('ack');msg('Rally point set','ok')}
+function isProd(b){return b&&b.k==='b'&&b.side===ME&&!b.dead&&(b.type==='barracks'||b.type==='factory')}
+function setRally(b,sx,sy){const w=screenToWorld(sx,sy);if(!w)return;issue({c:'rally',b:b.id,x:r1(w.x),y:r1(w.y)});ping(w.x,w.y,'#ffd27a');fxs.push({t:'ping',x:w.x,y:w.y,age:0,life:.9,r:40,col:'#ffd27a'});sfx('ack');msg('Rally point set','ok')}
 function riftAt(sx,sy){
   const w=screenToWorld(sx,sy);if(!w)return;
-  const rws=sel.filter(e=>e.type==='rift'&&!e.dead&&e.side===0&&!(e.rcd>0));if(!rws.length){msg('Rift Walker is recharging','bad');sfx('err');return}
+  const rws=sel.filter(e=>e.type==='rift'&&!e.dead&&e.side===ME&&!(e.rcd>0));if(!rws.length){msg('Rift Walker is recharging','bad');sfx('err');return}
   const rw=rws.sort((a,b)=>Math.hypot(a.x-w.x,a.y-w.y)-Math.hypot(b.x-w.x,b.y-w.y))[0];
   if(Math.hypot(rw.x-w.x,rw.y-w.y)>RIFT_R){msg('Too far: Rift Jump reaches '+(RIFT_R/T|0)+' tiles','bad');sfx('err');return}
   if(occ[ti(w.x,w.y)]){msg("Can't open a rift there",'bad');sfx('err');return}
-  riftJump(rw,w.x,w.y);
+  issue({c:'rift',r:rw.id,x:r1(w.x),y:r1(w.y)});
 }
 function riftJump(rw,wx,wy){
   const sq=units.filter(u=>!u.dead&&u.side===rw.side&&u.type!=='harv'&&Math.hypot(u.x-rw.x,u.y-rw.y)<T*4.2);
@@ -163,7 +163,7 @@ function riftJump(rw,wx,wy){
   groupDests(sq,wx,wy);
   for(const u of sq){relDock(u);u.x=u._dx;u.y=u._dy;u.path=null;u.atk=null;u.amove=null;u.cap=null;u.rally=null;fxs.push({t:'flash',x:u.x,y:u.y,age:0,life:.3,r:14})}
   fxs.push({t:'ping',x:wx,y:wy,age:0,life:1.1,r:90,col:'#9fffd8'});rw.rcd=RIFT_CD;sfx('ready',wx,wy);
-  if(rw.side===0){msg('Rift Jump: '+sq.length+' unit'+(sq.length>1?'s':'')+' moved','ok');say('Rift open','rift',1)}
+  if(rw.side===ME){msg('Rift Jump: '+sq.length+' unit'+(sq.length>1?'s':'')+' moved','ok');say('Rift open','rift',1)}
 }
 function updEng(u,dt){
   u.tang=u.ang;
@@ -261,7 +261,7 @@ function updHarv(u,dt){
       if(Math.abs(angd(u.ang,fa))<.04){u.ang=fa;const pk=refLocal(r,DOCK.lx,DOCK.park);u.path=[{x:pk.x,y:pk.y}];u.pi=0;u.hs='dockin'}break}
     case 'dockin':{const r=u.ref;if(!r||r.dead){relDock(u);u.hs='seek';break}u.ang=refFace(r);u.hs='unload';break}
     case 'unload':{
-      const take=Math.min(u.cargo,160*dt);u.cargo-=take;s.credits+=take*(u.side?DIFF[s.diff||diffKey].inc:1);
+      const take=Math.min(u.cargo,160*dt);u.cargo-=take;s.credits+=take*(s.ai?DIFF[s.diff||diffKey].inc:1);
       if(u.cargo<=.01){u.cargo=0;
         if(u.docked&&u.ref&&!u.ref.dead){const ap=refLocal(u.ref,DOCK.lx,DOCK.appr);u.rev=true;u.hs='dockout';u.path=[{x:ap.x,y:ap.y}];u.pi=0}else{relDock(u);u.hs='seek'}}
       break}
@@ -334,7 +334,7 @@ function prods(s,c){const pt=c==='i'?'barracks':'factory';return blds.filter(b=>
 function prodQ(b){return b.q||(b.q=[])}
 function qAll(s,c){let a=[];for(const p of prods(s,c))a=a.concat(prodQ(p));return a}
 const prodSel={i:null,v:null};
-function curProd(c){const ps=sides?prods(sides[0],c):[];return ps.find(b=>b.id===prodSel[c])||ps[0]||null}
+function curProd(c){const ps=sides?prods(sides[ME],c):[];return ps.find(b=>b.id===prodSel[c])||ps[0]||null}
 function enqueue(s,t,pb){
   const c=CAT[t];
   if(!canBuild(s,t))return false;
@@ -359,14 +359,14 @@ function spawnUnit(s,t,pp){
   return true;
 }
 function tickProd(s,dt){
-  const sp=(s.low?.5:1)*(s.id?DIFF[s.diff||diffKey].speed:1);
+  const sp=(s.low?.5:1)*(s.ai?DIFF[s.diff||diffKey].speed:1);
   const run=(q,c,p)=>{
     if(!q.length)return;const it=q[0],d=def(it.t);
     if(it.prog<1&&SANDBOX&&s.id===0)it.prog=1;
-    if(it.prog<1){const step=Math.min(1-it.prog,dt*sp/d.time),cost=d.cost*step;if(s.credits>=cost){s.credits-=cost;it.prog+=step;it.paid+=cost}else if(s.id===0&&!SANDBOX&&state==='play'){/* production stalled: tell the player, at most every 12 seconds */if(time-(s.nfT||-99)>12){s.nfT=time;say('Insufficient funds','funds',12);msg('Insufficient funds','bad')}}}
+    if(it.prog<1){const step=Math.min(1-it.prog,dt*sp/d.time),cost=d.cost*step;if(s.credits>=cost){s.credits-=cost;it.prog+=step;it.paid+=cost}else if(s.id===ME&&!SANDBOX&&state==='play'){/* production stalled: tell the player, at most every 12 seconds */if(time-(s.nfT||-99)>12){s.nfT=time;say('Insufficient funds','funds',12);msg('Insufficient funds','bad')}}}
     if(it.prog>=.9999){
-      if(isStruct(c)){s[RD(c)]=it.t;q.shift();if(s.id===0){msg(def(it.t).name+' ready. Tap it to place.','ok');sfx('ready');say('Construction complete','ready',.5)}}
-      else if(spawnUnit(s,it.t,p)){q.shift();if(s.id===0){msg(nm(it.t,0)+' ready.','ok');sfx('ready');say('Unit ready','unit',2.5)}}
+      if(isStruct(c)){s[RD(c)]=it.t;q.shift();if(s.id===ME){msg(def(it.t).name+' ready. Tap it to place.','ok');sfx('ready');say('Construction complete','ready',.5)}}
+      else if(spawnUnit(s,it.t,p)){q.shift();if(s.id===ME){msg(nm(it.t,ME)+' ready.','ok');sfx('ready');say('Unit ready','unit',2.5)}}
       else it.prog=1;
     }
   };

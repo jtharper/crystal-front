@@ -40,6 +40,17 @@ for (const f of refs) {
 glb = glb.replace(/'models\/([a-z0-9_]+)\.json'/g, "'models/$1.glb'");
 fs.writeFileSync(path.join(OUT, 'js', 'glb.js'), glb);
 
+// --- build id: both online players must run the same game code (a hash of every script) ---
+{
+  const { createHash } = await import('node:crypto');
+  const h = createHash('sha1');
+  for (const f of fs.readdirSync(path.join(OUT, 'js')).sort()) h.update(fs.readFileSync(path.join(OUT, 'js', f)));
+  const id = h.digest('hex').slice(0, 10), np = path.join(OUT, 'js', 'net.js');
+  const ns = fs.readFileSync(np, 'utf8');
+  if (!ns.includes("BUILD_ID='dev'")) throw new Error('BUILD_ID marker missing in net.js');
+  fs.writeFileSync(np, ns.replace("BUILD_ID='dev'", `BUILD_ID='${id}'`));
+}
+
 // --- three.js r128 served locally ---
 if (!fs.existsSync(path.join(THREE, 'build', 'three.min.js'))) throw new Error('three.js not installed - run npm install first');
 let html = fs.readFileSync(rel('index.html'), 'utf8');

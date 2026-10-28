@@ -11,6 +11,8 @@ function resize(){
 }
 new ResizeObserver(resize).observe($('#stage'));
 let last=performance.now(),uiT=0;
+/* ?nodraw (automated tests only): run the game without drawing frames */
+const NODRAW=/[?&]nodraw\b/.test(location.search);
 let lastErr='';
 let fcount=0;
 let dprCap=Math.min(1.5,devicePixelRatio||1),pfT=0,pfN=0,pfA=0,lowFx=false;
@@ -36,9 +38,13 @@ function frameBody(now){
     if(ptrMouse&&mouse.in&&!drag&&!rot){const m=16;if(mouse.x<m)mxv-=1;if(mouse.x>W-m)mxv+=1;if(mouse.y<m)myv+=1;if(mouse.y>H-m)myv-=1}
     cam.x+=(Math.cos(yaw)*mxv-Math.sin(yaw)*myv)*sp;cam.y+=(-Math.sin(yaw)*mxv-Math.cos(yaw)*myv)*sp;
     if(keys['q'])yaw-=1.5*dt;if(keys['e'])yaw+=1.5*dt;
-    clampCam();update(dt);
+    clampCam();
+    /* fixed-step simulation: catch up on real time (a slow frame runs several steps), never more than 1/4 s at once */
+    simAcc+=Math.min(rdt,.25)+netBoost();let n=0;
+    while(simAcc>=TICK&&simCanStep()){simStep();simAcc-=TICK;if(++n>=15){simAcc=0;break}}
+    if(simAcc>TICK*3)simAcc=TICK*3;
   }
-  draw();
+  if(!NODRAW)draw();
   uiT-=dt;if(uiT<=0){uiT=.1;updUI()}
 }
 resize();
@@ -138,7 +144,7 @@ else{
   $('#backBtn').addEventListener('click',()=>showPanel('home'));
   $('#startBtn').addEventListener('click',()=>{audioInit();startGame(pickDiff)});
   $('#againBtn').addEventListener('click',()=>{audioInit();startGame(diffKey)});
-  $('#menuBtn2').addEventListener('click',()=>{showPanel('home');menuScene()});
+  $('#menuBtn2').addEventListener('click',()=>{netReset();showPanel('home');menuScene()});
   setupPost();
   $('#escGfx').addEventListener('click',()=>{const i=GFX_LEVELS.findIndex(g=>g[0]===GFX);setGfx(GFX_LEVELS[(i+1)%GFX_LEVELS.length][0]);sfx('click')});setGfx(GFX);
   showPanel('home');whenStartModels(()=>{if(state==='menu'){menuScene();glbMenuBuilt=true;thumbPrewarm()}},6000);
@@ -148,4 +154,4 @@ if(renderer){const cv=renderer.domElement;
   cv.addEventListener('webglcontextlost',e=>{e.preventDefault();if(state==='play'&&escEl.hidden)openEsc();msg('Graphics paused by the browser, restoring...','bad')});
   cv.addEventListener('webglcontextrestored',()=>{try{for(const k in thCache)delete thCache[k];if(world)build3D();updFog();msg('Graphics restored','ok')}catch(e){console.error(e)}})}
 requestAnimationFrame(frame);
-window.__cf={place:()=>place,fc:()=>[fcount,uiT,state,paused],ui:()=>updUI(),autoPlace:t=>{for(let r=2;r<12;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const tx=BASES[0][0]+dx,ty=BASES[0][1]-3+dy;if(validPlace(0,t,tx,ty,0,0)){placeBuilding(sides[0],t,tx,ty,0);return true}}return false},select:a=>{sel=a},memB,hurt,hAt,start:startGame,step:(n,dt)=>{for(let i=0;i<n;i++)update(dt||1/30)},get:()=>({units,blds,sides,state,sel,cam,ents,cd:camDist,yaw}),snd:()=>{audioInit();const r=[];for(const n in SFX){try{SFX[n](AC.currentTime+.01,1,0);r.push(n)}catch(e){r.push(n+"!"+e.message)}}try{say("Building","t",0);r.push("say")}catch(e){r.push("say!"+e.message)}return r.join(" ")+" ac="+AC.state},view:(d,y)=>{camDist=d;if(y!=null)yaw=y},br:()=>BRIDGES.map(b=>[b.ax/T,b.az/T,b.bx/T,b.bz/T,b.hA|0,b.hB|0]),hills:()=>HILLS,ter:()=>ter,occ:()=>occ,gH:(x,z)=>gH(x,z),reveal:()=>{REVEAL=true;updFog()},tex:()=>terrain.toDataURL(),spawn:(t,s,x,y)=>addUnit(t,s,x,y),thumb:(t,sk,sz)=>thumb(t,sk,sz),rift:(u,x,y)=>riftJump(u,x,y),scene:()=>scene,cam:()=>camera,info:()=>{const i=renderer.info;return {calls:i.render.calls,tris:i.render.triangles,geos:i.memory.geometries,tex:i.memory.textures,progs:i.programs.length}},draw:()=>draw(),upd:dt=>update(dt)};
+window.__cf={place:()=>place,fc:()=>[fcount,uiT,state,paused],ui:()=>updUI(),autoPlace:t=>{for(let r=2;r<12;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const tx=BASES[0][0]+dx,ty=BASES[0][1]-3+dy;if(validPlace(0,t,tx,ty,0,0)){placeBuilding(sides[0],t,tx,ty,0);return true}}return false},select:a=>{sel=a},memB,hurt,hAt,start:startGame,step:(n)=>{for(let i=0;i<n;i++)simStep()},hash:()=>simHash(),tick:()=>simTick,get:()=>({units,blds,sides,state,sel,cam,ents,cd:camDist,yaw}),snd:()=>{audioInit();const r=[];for(const n in SFX){try{SFX[n](AC.currentTime+.01,1,0);r.push(n)}catch(e){r.push(n+"!"+e.message)}}try{say("Building","t",0);r.push("say")}catch(e){r.push("say!"+e.message)}return r.join(" ")+" ac="+AC.state},view:(d,y)=>{camDist=d;if(y!=null)yaw=y},br:()=>BRIDGES.map(b=>[b.ax/T,b.az/T,b.bx/T,b.bz/T,b.hA|0,b.hB|0]),hills:()=>HILLS,ter:()=>ter,occ:()=>occ,gH:(x,z)=>gH(x,z),reveal:()=>{REVEAL=true;updFog()},tex:()=>terrain.toDataURL(),spawn:(t,s,x,y)=>addUnit(t,s,x,y),thumb:(t,sk,sz)=>thumb(t,sk,sz),rift:(u,x,y)=>riftJump(u,x,y),scene:()=>scene,cam:()=>camera,info:()=>{const i=renderer.info;return {calls:i.render.calls,tris:i.render.triangles,geos:i.memory.geometries,tex:i.memory.textures,progs:i.programs.length}},draw:()=>draw(),upd:dt=>update(dt)};
