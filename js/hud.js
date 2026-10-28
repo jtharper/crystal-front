@@ -118,11 +118,11 @@ function updSel(){
     const e=r.e,f=Math.max(0,e.hp/e.mhp);r.bar.style.width=(f*100)+'%';r.bar.className=f>.55?'':f>.25?'warn':'low';
     if(r.txt)r.txt.textContent=Math.ceil(Math.max(0,e.hp))+' / '+e.mhp;
     if(r.cargo){r.cargo.style.width=(e.cargo/UDEF.harv.cap*100)+'%';r.ctxt.textContent=Math.floor(e.cargo)+' / '+UDEF.harv.cap}
-    if(r.card)r.card.classList.toggle('dead',e.dead);
+    if(r.card)r.card.classList.toggle('dead',!!e.dead);
   }
 }
 function buildSelBar(us){
-  const sp=$('#selBar');selRefs=[];
+  const sp=$('#selBar');selRefs=[];sp.classList.remove('sbTiles');sp.style.width='';
   const desel=`<button type="button" class="sbX" aria-label="Deselect">&#10005;</button>`;
   if(us.length===1){
     const e=us[0],ro=ROLE[e.type]||[''],hint=e.type==='eng'?'Tap an enemy or map building to capture it':e.type==='harv'?'Tap crystals to harvest there':'Tap ground to move · enemy to attack';
@@ -133,21 +133,20 @@ function buildSelBar(us){
       `<div class="sbHint">${hint}</div></div></div>`+desel;
     selRefs.push({e,bar:sp.querySelector('.hpm i'),txt:sp.querySelector('.ht'),cargo:e.type==='harv'?sp.querySelector('.hp.cargo i'):null,ctxt:sp.querySelector('.ct')});
   }else if(DESK){
-    /* desktop: a tall army panel on the left: total, one row per unit type (count + group health), then every unit */
-    const counts={};for(const e of us)counts[e.type]=(counts[e.type]||0)+1;
-    const types=Object.entries(counts).sort((a,b)=>b[1]-a[1]||(UDEF[b[0]].cost-UDEF[a[0]].cost));
+    /* desktop: one entry per selected unit, never a scrollbar. A few units get full rows (picture, name, health);
+       a big army switches to compact tiles and the panel widens until every unit fits on screen. */
+    const head=78,avail=Math.max(200,H-16-16-head),rowH=58,tile=58,gap=6,rows=us.length*rowH<=avail;
+    let cols=1;if(!rows){const maxR=Math.max(1,Math.floor((avail+gap)/(tile+gap)));cols=Math.max(5,Math.ceil(us.length/maxR))}
+    sp.classList.toggle('sbTiles',!rows);sp.style.width=rows?'':(cols*(tile+gap)-gap+24)+'px';sp.style.setProperty('--cols',cols);
     sp.innerHTML=`<div class="sbArmy"><div class="sbAHead"><span class="sbN">${us.length}</span><span class="lbl">units selected</span></div>
-      <div class="hp hpm sbAll"><i></i></div>
-      <div class="sbGroups">${types.map(([t,n])=>`<button type="button" class="sbGrp" data-t="${t}"><img alt="" src="${thumb(t,skinOf(ME),96)}"><span class="gTxt"><span class="gN">${nm(t,ME)}</span><span class="hp gH"><i></i></span></span><b>×${n}</b></button>`).join('')}</div>
-      <div class="sbAHint">Click a group to keep only it · Ctrl+click to drop it</div>
-      <div class="sbCards"></div></div>`+desel;
+      <div class="hp hpm sbAll"><i></i></div><div class="sbUnits"></div></div>`+desel;
     selRefs.push({all:us,bar:sp.querySelector('.sbAll i')});
-    sp.querySelectorAll('.sbGrp').forEach(b=>{const t=b.dataset.t;selRefs.push({all:us.filter(e=>e.type===t),bar:b.querySelector('.gH i'),cnt:b.querySelector('b')});
-      b.addEventListener('click',ev=>{sel=ev.ctrlKey||ev.metaKey?sel.filter(e=>e.type!==t):sel.filter(e=>e.type===t);sfx('click');updSel()})});
-    const cards=sp.querySelector('.sbCards');
-    for(const e of us.slice(0,150)){const b=document.createElement('button');b.type='button';b.className='sbCard';b.setAttribute('aria-label',nm(e.type,e.side));
-      b.innerHTML=`<img alt="" src="${thumb(e.type,skinOf(e.side),96)}"><span class="mh"><i></i></span>`;
-      b.addEventListener('click',ev=>{sel=ev.ctrlKey||ev.metaKey?sel.filter(x=>x!==e):[e];sfx('click');updSel()});cards.appendChild(b);selRefs.push({e,bar:b.querySelector('.mh i'),card:b})}
+    const box=sp.querySelector('.sbUnits');
+    for(const e of us){const b=document.createElement('button');b.type='button';b.className=rows?'sbU':'sbT';b.setAttribute('aria-label',nm(e.type,e.side));
+      b.innerHTML=rows?`<img alt="" src="${thumb(e.type,skinOf(e.side),96)}"><span class="uTxt"><span class="uN">${nm(e.type,e.side)}</span><span class="hp uH"><i></i></span></span>`
+        :`<img alt="" src="${thumb(e.type,skinOf(e.side),96)}"><span class="mh"><i></i></span>`;
+      b.addEventListener('click',ev=>{sel=ev.ctrlKey||ev.metaKey?sel.filter(x=>x!==e):[e];sfx('click');updSel()});
+      box.appendChild(b);selRefs.push({e,bar:b.querySelector(rows?'.uH i':'.mh i'),card:b})}
   }else{
     const counts={};for(const e of us)counts[e.type]=(counts[e.type]||0)+1;
     const types=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
