@@ -70,11 +70,13 @@ function visResize(){visC.width=MW;visC.height=MH;visImg=visX.createImageData(MW
 visX.fillStyle='#000';visX.fillRect(0,0,MW,MH);
 const visTex=new THREE.CanvasTexture(visC);visTex.flipY=false;visTex.minFilter=visTex.magFilter=THREE.LinearFilter;visTex.generateMipmaps=false;
 const CFS={value:1.12},CFZ={value:new THREE.Vector2(WW,WH)},CFU={value:visTex},CFT={value:new THREE.Vector4(1,1.02,1.05,.5)};
+/* fog of war outside the map: 0 = unseen (in a match), 1 = lit (menu backdrop, build-menu pictures) */
+const CFE={value:1};
 function cfCompile(sh){
-  sh.uniforms.uCfVis=CFU;sh.uniforms.uCfTint=CFT;sh.uniforms.uSat=CFS;sh.uniforms.uCfSize=CFZ;
+  sh.uniforms.uCfVis=CFU;sh.uniforms.uCfTint=CFT;sh.uniforms.uSat=CFS;sh.uniforms.uCfSize=CFZ;sh.uniforms.uCfEdge=CFE;
   sh.vertexShader='varying vec3 vCfW;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n vec4 cfp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\n cfp=instanceMatrix*cfp;\n#endif\n vCfW=(modelMatrix*cfp).xyz;');
-  sh.fragmentShader='uniform float uSat;\nuniform vec2 uCfSize;\nuniform sampler2D uCfVis;\nuniform vec4 uCfTint;\nvarying vec3 vCfW;\n'+sh.fragmentShader.replace('#include <dithering_fragment>',
-    '{float sl=dot(gl_FragColor.rgb,vec3(.299,.587,.114));gl_FragColor.rgb=max(mix(vec3(sl),gl_FragColor.rgb,uSat),0.);}\n float cfv=texture2D(uCfVis,vCfW.xz/uCfSize).r;\n float cfl=dot(gl_FragColor.rgb,vec3(.299,.587,.114));\n gl_FragColor.rgb=mix(vec3(pow(cfl,1.35))*uCfTint.rgb*uCfTint.a+.015,gl_FragColor.rgb,cfv);\n#include <dithering_fragment>');
+  sh.fragmentShader='uniform float uSat;\nuniform float uCfEdge;\nuniform vec2 uCfSize;\nuniform sampler2D uCfVis;\nuniform vec4 uCfTint;\nvarying vec3 vCfW;\n'+sh.fragmentShader.replace('#include <dithering_fragment>',
+    '{float sl=dot(gl_FragColor.rgb,vec3(.299,.587,.114));gl_FragColor.rgb=max(mix(vec3(sl),gl_FragColor.rgb,uSat),0.);}\n vec2 cfuv=vCfW.xz/uCfSize;float cfv=texture2D(uCfVis,cfuv).r;\n vec2 cfd=min(cfuv,1.-cfuv)*uCfSize/32.;cfv=mix(min(cfv,uCfEdge),cfv,clamp(min(cfd.x,cfd.y)+1.,0.,1.));\n float cfl=dot(gl_FragColor.rgb,vec3(.299,.587,.114));\n gl_FragColor.rgb=mix(vec3(pow(cfl,1.35))*uCfTint.rgb*uCfTint.a+.015,gl_FragColor.rgb,cfv);\n#include <dithering_fragment>');
 }
 function fogify(m){m.onBeforeCompile=cfCompile;return m}
 /* photo-scanned ground (CC0 texture sets from Poly Haven): leafy mud (A) and dry cracked mud (B), colour + normal maps */

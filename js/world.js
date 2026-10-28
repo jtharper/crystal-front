@@ -666,7 +666,7 @@ function thumb(type,side,size){
     const c=box.getCenter(new THREE.Vector3()),r=box.getSize(new THREE.Vector3()).length()/2;
     const dir=new THREE.Vector3(1.25,.95,1.1).normalize();
     thCam.position.copy(c).addScaledVector(dir,r/Math.sin(THREE.MathUtils.degToRad(14))*.95);thCam.lookAt(c);thCam.updateProjectionMatrix();
-    thScene.add(g);const prev=CFU.value;CFU.value=whiteTex;thR.render(thScene,thCam);CFU.value=prev;thScene.remove(g);
+    thScene.add(g);const prev=CFU.value,pe=CFE.value;CFU.value=whiteTex;CFE.value=1;thR.render(thScene,thCam);CFU.value=prev;CFE.value=pe;thScene.remove(g);
     return thCache[key]=thR.domElement.toDataURL('image/png');
   }catch(err){return thCache[key]=''}
 }
