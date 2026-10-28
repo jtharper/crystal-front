@@ -798,7 +798,8 @@ function drawOverlay(){
     ox.fillStyle='#e6b043';ox.fill(WRENCH);ox.restore();
   }
   /* rally flags */
-  for(const b of blds){if(!isProd(b)||!b.rally)continue;const rp=toScreen(b.rally.x,hAt(b.rally.x,b.rally.y),b.rally.y);if(rp.behind)continue;const hot=sel.includes(b);
+  /* rally flags: shown only while their barracks / war factory is selected */
+  for(const b of blds){if(!isProd(b)||!b.rally||!sel.includes(b))continue;const rp=toScreen(b.rally.x,hAt(b.rally.x,b.rally.y),b.rally.y);if(rp.behind)continue;const hot=true;
     if(hot){const bp=toScreen(b.x,footY(b)+6,b.y);ox.save();ox.setLineDash([5,5]);ox.strokeStyle='rgba(255,210,122,.7)';ox.lineWidth=1.5;ox.beginPath();ox.moveTo(bp.x,bp.y);ox.lineTo(rp.x,rp.y);ox.stroke();ox.restore()}
     ox.save();ox.translate(rp.x,rp.y);ox.globalAlpha=hot?1:.75;ox.strokeStyle='#1a1405';ox.lineWidth=3;ox.beginPath();ox.moveTo(0,0);ox.lineTo(0,-22);ox.stroke();ox.strokeStyle='#ffd27a';ox.lineWidth=1.6;ox.stroke();
     ox.fillStyle='#ffd27a';ox.beginPath();ox.moveTo(0,-22);ox.lineTo(13,-17.5);ox.lineTo(0,-13);ox.closePath();ox.fill();ox.strokeStyle='#1a1405';ox.lineWidth=1;ox.stroke();

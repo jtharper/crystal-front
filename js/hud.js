@@ -112,6 +112,8 @@ function updSel(){
   if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else selRefs=[]}
   selBarOn=us.length>0&&selBarOff!==key&&!place;bar.hidden=!selBarOn;
   for(const r of selRefs){
+    if(r.all){let hp=0,mx=0,n=0;for(const e of r.all)if(!e.dead){hp+=Math.max(0,e.hp);mx+=e.mhp;n++}const f=mx?hp/mx:0;
+      r.bar.style.width=(f*100)+'%';r.bar.className=f>.55?'':f>.25?'warn':'low';if(r.cnt)r.cnt.textContent='×'+n;continue}
     if(r.ab){const rws=r.list.filter(e=>e.type==='rift'&&!e.dead),cd=Math.min(...rws.map(e=>e.rcd>0?e.rcd:0));r.ab.disabled=cd>0;r.ab.textContent=cd>0?'Rift '+Math.ceil(cd)+'s':'Rift Jump';continue}
     const e=r.e,f=Math.max(0,e.hp/e.mhp);r.bar.style.width=(f*100)+'%';r.bar.className=f>.55?'':f>.25?'warn':'low';
     if(r.txt)r.txt.textContent=Math.ceil(Math.max(0,e.hp))+' / '+e.mhp;
@@ -130,6 +132,22 @@ function buildSelBar(us){
       (e.type==='harv'?`<div class="sbRow"><span class="lbl">Cargo</span><span class="sbV ct"></span></div><div class="hp cargo"><i></i></div>`:'')+
       `<div class="sbHint">${hint}</div></div></div>`+desel;
     selRefs.push({e,bar:sp.querySelector('.hpm i'),txt:sp.querySelector('.ht'),cargo:e.type==='harv'?sp.querySelector('.hp.cargo i'):null,ctxt:sp.querySelector('.ct')});
+  }else if(DESK){
+    /* desktop: a tall army panel on the left: total, one row per unit type (count + group health), then every unit */
+    const counts={};for(const e of us)counts[e.type]=(counts[e.type]||0)+1;
+    const types=Object.entries(counts).sort((a,b)=>b[1]-a[1]||(UDEF[b[0]].cost-UDEF[a[0]].cost));
+    sp.innerHTML=`<div class="sbArmy"><div class="sbAHead"><span class="sbN">${us.length}</span><span class="lbl">units selected</span></div>
+      <div class="hp hpm sbAll"><i></i></div>
+      <div class="sbGroups">${types.map(([t,n])=>`<button type="button" class="sbGrp" data-t="${t}"><img alt="" src="${thumb(t,skinOf(ME),96)}"><span class="gTxt"><span class="gN">${nm(t,ME)}</span><span class="hp gH"><i></i></span></span><b>×${n}</b></button>`).join('')}</div>
+      <div class="sbAHint">Click a group to keep only it · Ctrl+click to drop it</div>
+      <div class="sbCards"></div></div>`+desel;
+    selRefs.push({all:us,bar:sp.querySelector('.sbAll i')});
+    sp.querySelectorAll('.sbGrp').forEach(b=>{const t=b.dataset.t;selRefs.push({all:us.filter(e=>e.type===t),bar:b.querySelector('.gH i'),cnt:b.querySelector('b')});
+      b.addEventListener('click',ev=>{sel=ev.ctrlKey||ev.metaKey?sel.filter(e=>e.type!==t):sel.filter(e=>e.type===t);sfx('click');updSel()})});
+    const cards=sp.querySelector('.sbCards');
+    for(const e of us.slice(0,150)){const b=document.createElement('button');b.type='button';b.className='sbCard';b.setAttribute('aria-label',nm(e.type,e.side));
+      b.innerHTML=`<img alt="" src="${thumb(e.type,skinOf(e.side),96)}"><span class="mh"><i></i></span>`;
+      b.addEventListener('click',ev=>{sel=ev.ctrlKey||ev.metaKey?sel.filter(x=>x!==e):[e];sfx('click');updSel()});cards.appendChild(b);selRefs.push({e,bar:b.querySelector('.mh i'),card:b})}
   }else{
     const counts={};for(const e of us)counts[e.type]=(counts[e.type]||0)+1;
     const types=Object.entries(counts).sort((a,b)=>b[1]-a[1]);

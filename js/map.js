@@ -112,7 +112,7 @@ function genMap(noPaint){
   }
   for(const [fx,fy,r] of fields)for(let y=Math.floor(fy-r-1);y<=fy+r+1;y++)for(let x=Math.floor(fx-r-1);x<=fx+r+1;x++){
     if(x<1||y<1||x>=MW-1||y>=MH-1)continue;
-    if(Math.hypot(x-fx,y-fy)<r*(0.75+rng()*.35)&&!occ[y*MW+x])cry[y*MW+x]=450+rng()*350;
+    if(Math.hypot(x-fx,y-fy)<r*(0.75+rng()*.35)&&!occ[y*MW+x])cry[y*MW+x]=(450+rng()*350)*CRY_RICH;
   }
   const B0=BASES,ent=B0.map(([bx,by])=>[bx+(bx<MW/2?4:-4),by+(by<MH/2?-3:3)]),seen=new Uint8Array(MW*MH),q=[ent[0][1]*MW+ent[0][0]];seen[q[0]]=1;
   while(q.length){const c=q.pop(),cx=c%MW,cy=(c/MW)|0;for(let k=0;k<4;k++){const nx=cx+DX[k],ny=cy+DY[k];if(nx<0||ny<0||nx>=MW||ny>=MH)continue;const ni=ny*MW+nx;if(!occ[ni]&&!seen[ni]){seen[ni]=1;q.push(ni)}}}

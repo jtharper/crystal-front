@@ -127,6 +127,8 @@ const nm=(t,side)=>{const fc=(typeof sides!=='undefined'&&sides&&sides[side||0])
 const RD=c=>c==='d'?'readyD':'ready',isStruct=c=>c==='b'||c==='d';
 /* crystal tiles start regrowing after CRY_WAIT seconds untouched and take CRY_REGROW seconds to refill */
 const CRY_WAIT=25,CRY_REGROW=240;
+/* crystal per field tile is multiplied by CRY_RICH: harvesting speed and income stay the same, fields last longer */
+const CRY_RICH=2.5;
 const PLACE_R=6,SPIKE_INC=14,SHIELD_R=7*T,RIFT_R=13*T,RIFT_CD=40;
 const DIFF={easy:{wave:8,speed:.7,inc:.8,first:140},normal:{wave:6,speed:1,inc:1,first:100},hard:{wave:5,speed:1.25,inc:1.2,first:75}};
 
