@@ -6,7 +6,7 @@ function resize(){
   if(renderer){renderer.setPixelRatio(dpr);renderer.setSize(W,H,false);if(typeof postResize==='function')postResize()}
   ov.width=W*dpr;ov.height=H*dpr;clampCam();
   const dk=!TOUCH&&W>=1200&&H>=680;
-  if(dk!==DESK){DESK=dk;document.body.classList.toggle('desk',DESK);camDist=Math.min(camDist,zMax());if(typeof trayOpen!=='undefined'&&DESK&&state==='play')trayOpen=true}
+  if(dk!==DESK){DESK=dk;document.body.classList.toggle('desk',DESK);camDist=Math.min(camDist,zMax());}
   const ms=DESK?320:192;if(mm.width!==ms){mm.width=mm.height=ms}
 }
 new ResizeObserver(resize).observe($('#stage'));
@@ -28,6 +28,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){if(state==
 function frame(now){
   requestAnimationFrame(frame);fcount++;
   const j0=performance.now();try{frameBody(now)}catch(err){const m=String(err&&err.stack||err);if(m!==lastErr){lastErr=m;console.error(m)}}
+  if(typeof plFrame==='function')plFrame();
   if(typeof diagFrame==='function')diagFrame(now,performance.now()-j0);
 }
 function frameBody(now){
@@ -142,8 +143,8 @@ else{
   }
   $('#playBtn').addEventListener('click',()=>{audioInit();sfx('click');showPanel('setup')});
   $('#backBtn').addEventListener('click',()=>showPanel('home'));
-  $('#startBtn').addEventListener('click',()=>{audioInit();startGame(pickDiff)});
-  $('#againBtn').addEventListener('click',()=>{audioInit();startGame(diffKey)});
+  $('#startBtn').addEventListener('click',()=>{audioInit();startGame(pickDiff);plRequest()});
+  $('#againBtn').addEventListener('click',()=>{audioInit();startGame(diffKey);plRequest()});
   $('#menuBtn2').addEventListener('click',()=>{netReset();showPanel('home');menuScene()});
   setupPost();
   $('#escGfx').addEventListener('click',()=>{const i=GFX_LEVELS.findIndex(g=>g[0]===GFX);setGfx(GFX_LEVELS[(i+1)%GFX_LEVELS.length][0]);sfx('click')});setGfx(GFX);

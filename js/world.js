@@ -672,7 +672,7 @@ function thumb(type,side,size){
 }
 function applyThumbs(){for(const t in btn){const im=btn[t].querySelector('img');const u=thumb(t,skinOf(ME),180);if(u)im.src=u;
   btn[t].hidden=def(t).fac!=null&&sides[ME].fac!==def(t).fac;
-  if(UDEF[t]){const n=nm(t,ME);btn[t].querySelector('.nm').textContent=n;btn[t].title=btn[t].title.replace(/^[^.]*\./,n+'.')}}}
+  if(UDEF[t]){const n=nm(t,ME);btn[t].querySelector('.nm').textContent=n;btn[t].setAttribute('aria-label',(btn[t].getAttribute('aria-label')||'').replace(/^[^.]*\./,n+'.'))}}}
 const selMat=new THREE.MeshBasicMaterial({color:0x8dff9f,transparent:true,opacity:.95,depthTest:false,depthWrite:false});
 function getSelBox(i){
   let b=selBoxes[i];

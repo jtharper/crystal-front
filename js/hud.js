@@ -13,8 +13,8 @@ function showTab(c){curTab=c;for(const k in tabSec){tabSec[k].hidden=k!==c;tabBt
 for(const c of ['b','d','i','v']){
   const tb=document.createElement('button');tb.type='button';tb.className='tb';tb.setAttribute('role','tab');
   tb.innerHTML=ICONS[c]+`<span>${{b:'Base',d:'Defense',i:'Infantry',v:'Vehicles'}[c]}</span><i class="dot"></i><i class="tp"></i>`;
-  tb.title=UNLOCK[c]?`${TITLES[c]} (build a ${BDEF[UNLOCK[c]].name} to unlock)`:TITLES[c];
-  tb.addEventListener('click',()=>{if(tb.disabled)return;tb.classList.remove('fresh');if(DESK){showTab(c);trayOpen=true}else if(selBarOn){selBarOff=selKey;selBarOn=false;$('#selBar').hidden=true;showTab(c);trayOpen=true}else if(trayOpen&&curTab===c){trayOpen=false}else{showTab(c);trayOpen=true}sfx('click');updUI()});
+  tb.setAttribute('aria-label',UNLOCK[c]?`${TITLES[c]} (build a ${BDEF[UNLOCK[c]].name} to unlock)`:TITLES[c]);
+  tb.addEventListener('click',()=>{if(tb.disabled)return;tb.classList.remove('fresh');if(DESK){if(trayOpen&&curTab===c)trayOpen=false;else{showTab(c);trayOpen=true}}else if(selBarOn){selBarOff=selKey;selBarOn=false;$('#selBar').hidden=true;showTab(c);trayOpen=true}else if(trayOpen&&curTab===c){trayOpen=false}else{showTab(c);trayOpen=true}sfx('click');updUI()});
   barEl.appendChild(tb);tabBtn[c]=tb;
   const sec=document.createElement('section');sec.className='tab';sec.setAttribute('role','tabpanel');tabSec[c]=sec;
   sec.innerHTML=`<h3>${TITLES[c]}</h3>`+((c==='i'||c==='v')?`<div class="subtabs" id="sub_${c}" hidden></div>`:'');
@@ -22,7 +22,7 @@ for(const c of ['b','d','i','v']){
     const d=def(t),b=document.createElement('button');
     b.type='button';b.className='bt';b.dataset.t=t;
     const reqs=(d.req||[]).map(r=>BDEF[r].name);if(c==='i')reqs.push('Barracks');if(c==='v')reqs.push('War Factory');
-    b.title=`${d.name}. Needs: ${reqs.join(', ')||'none'}. Build time ${d.time}s.`;
+    b.setAttribute('aria-label',`${d.name}. Needs: ${reqs.join(', ')||'none'}. Build time ${d.time}s.`);
     b.innerHTML=`<img alt=""><i class="pg"></i><span class="nm">${d.name}</span><span class="cs">$${d.cost}</span><span class="bd"></span><i class="pgb"></i>`;
     b.addEventListener('click',()=>onBuild(t));
     b.addEventListener('contextmenu',e=>{e.preventDefault();onCancel(t)});
@@ -55,7 +55,9 @@ function updUI(){
   const f=s.pw?Math.min(1,s.use/s.pw):(s.use?1:0),pb=$('#pmfill');pb.style.width=(s.low?100:f*100)+'%';
   pb.classList.toggle('low',s.low);pb.classList.toggle('warn',!s.low&&f>.85);
   if(s.low&&!wasLow&&state==='play'){msg('Low power: radar and defenses offline. Build a Power Plant.','bad');sfx('err');say('Low power','low',8)}wasLow=s.low;
-  document.body.classList.toggle('placing',!!place);document.body.classList.toggle('moding',mode==='repair'||mode==='sell'||mode==='rift');$('#tray').hidden=DESK?false:(!trayOpen||selBarOn);
+  document.body.classList.toggle('placing',!!place);document.body.classList.toggle('moding',mode==='repair'||mode==='sell'||mode==='rift');$('#tray').hidden=DESK?!trayOpen:(!trayOpen||selBarOn);
+  /* the open tab is highlighted; a closed tray leaves every tab unlit */
+  for(const k in tabBtn){const on=trayOpen&&k===curTab;tabBtn[k].classList.toggle('on',on);tabBtn[k].setAttribute('aria-selected',on)}
   {const tb=$('#tbar');tb.hidden=true;if(!tb.hidden){const hasU=myArmy().length>0;$('#tbBox').classList.toggle('on',boxMode);$('#tbAtk').classList.toggle('on',mode==='amove');$('#tbAtk').disabled=!hasU;$('#tbStop').disabled=!hasU}}
   $('#sellBtn').classList.toggle('on',mode==='sell');$('#sellBtn').setAttribute('aria-pressed',mode==='sell');
   $('#repBtn').classList.toggle('on',mode==='repair');$('#repBtn').setAttribute('aria-pressed',mode==='repair');
@@ -135,7 +137,7 @@ function buildSelBar(us){
       <div class="sbTypes">${types.map(([t,n])=>`<button type="button" class="sbType" data-t="${t}"><img alt="" src="${thumb(t,skinOf(ME),96)}"><span>${nm(t,ME)}</span><b>×${n}</b></button>`).join('')}</div></div>
       <div class="sbCards"></div></div>`+desel;
     const cards=sp.querySelector('.sbCards');
-    for(const e of us.slice(0,60)){const b=document.createElement('button');b.type='button';b.className='sbCard';b.title=nm(e.type,e.side);
+    for(const e of us.slice(0,60)){const b=document.createElement('button');b.type='button';b.className='sbCard';b.setAttribute('aria-label',nm(e.type,e.side));
       b.innerHTML=`<img alt="" src="${thumb(e.type,skinOf(e.side),96)}"><span class="mh"><i></i></span>`;
       b.addEventListener('click',()=>{sel=[e];sfx('click');updSel()});cards.appendChild(b);selRefs.push({e,bar:b.querySelector('.mh i'),card:b})}
     sp.querySelectorAll('.sbType').forEach(b=>b.addEventListener('click',()=>{sel=sel.filter(e=>e.type===b.dataset.t);sfx('click');updSel()}));

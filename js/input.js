@@ -95,10 +95,12 @@ cvs.addEventListener('wheel',e=>{e.preventDefault();camDist=Math.max(ZMIN,Math.m
 let ptrMouse=false;const ptrs=new Map();let gest=null,gestLock=false,lpT=0,lastTap=null,boxMode=false;
 function startGest(){const [a,b]=[...ptrs.values()];gest={d0:Math.max(20,Math.hypot(b.x-a.x,b.y-a.y)),a0:Math.atan2(b.y-a.y,b.x-a.x),cd:camDist,y0:yaw,mx:(a.x+b.x)/2,my:(a.y+b.y)/2};gestLock=true}
 function endPtr(e){if(e.pointerType==='mouse')return false;ptrs.delete(e.pointerId);if(gestLock){if(!ptrs.size){gestLock=false;gest=null}drag=null;clearTimeout(lpT);return true}return false}
-cvs.addEventListener('pointercancel',e=>{endPtr(e);drag=null;clearTimeout(lpT)});
+cvs.addEventListener('pointercancel',e=>{if(typeof PL!=='undefined'&&PL.on&&e.isTrusted)return;endPtr(e);drag=null;clearTimeout(lpT)});
 cvs.addEventListener('pointerdown',e=>{
+  if(typeof PL!=='undefined'&&PL.on&&e.isTrusted)return;
   if(state!=='play')return;
-  cvs.setPointerCapture(e.pointerId);
+  if(e.isTrusted&&e.pointerType==='mouse'&&typeof plRequest==='function')plRequest();
+  try{cvs.setPointerCapture(e.pointerId)}catch(er){}
   const p=posOf(e);ptrMouse=e.pointerType==='mouse';if(ptrMouse||!place)mouse={x:p.x,y:p.y,in:true};
   if(e.pointerType!=='mouse'){ptrs.set(e.pointerId,p);if(ptrs.size>=2){startGest();drag=null;clearTimeout(lpT);return}if(gestLock)return}
   if(e.pointerType==='mouse'&&e.button===1){rot={x:p.x};e.preventDefault();return}
@@ -112,6 +114,7 @@ cvs.addEventListener('pointerdown',e=>{
   if(drag.touch&&!place&&!mode&&!drag.box){clearTimeout(lpT);lpT=setTimeout(()=>{const d=drag;if(d&&!d.panned&&!place&&!mode&&sel.some(u=>u.k==='u'&&u.side===ME&&!u.dead)){command(d.x,d.y,true);d.lp=true;sfx('ack');try{navigator.vibrate&&navigator.vibrate(18)}catch(err){}}},520)}
 });
 cvs.addEventListener('pointermove',e=>{
+  if(typeof PL!=='undefined'&&PL.on&&e.isTrusted)return;
   const p=posOf(e);ptrMouse=e.pointerType==='mouse';
   if(ptrMouse||!place)mouse={x:p.x,y:p.y,in:true};
   else if(drag&&drag.touch&&ptrs.size<2){mouse={x:Math.max(0,Math.min(W,drag.gx+p.x-drag.sx)),y:Math.max(0,Math.min(H,drag.gy+p.y-drag.sy)),in:true}}
@@ -130,8 +133,9 @@ cvs.addEventListener('pointermove',e=>{
   }
   drag.lx=p.x;drag.ly=p.y;
 });
-cvs.addEventListener('pointerleave',()=>{mouse.in=false});
+cvs.addEventListener('pointerleave',()=>{if(typeof PL!=='undefined'&&PL.on)return;mouse.in=false});
 cvs.addEventListener('pointerup',e=>{
+  if(typeof PL!=='undefined'&&PL.on&&e.isTrusted)return;
   if(endPtr(e))return;
   if(rot){rot=null;return}
   if(!drag||state!=='play'){drag=null;return}
@@ -170,7 +174,7 @@ mm.addEventListener('pointerdown',e=>{
   if(state!=='play')return;
   const p=mmPos(e);
   if(e.pointerType==='mouse'&&e.button===2){moveGroupWorld(p.x,p.y);return}
-  mm.setPointerCapture(e.pointerId);mmDrag=true;cam.x=p.x;cam.y=p.y;clampCam();
+  try{mm.setPointerCapture(e.pointerId)}catch(er){}mmDrag=true;cam.x=p.x;cam.y=p.y;clampCam();
 });
 mm.addEventListener('pointermove',e=>{if(!mmDrag)return;const p=mmPos(e);cam.x=p.x;cam.y=p.y;clampCam()});
 mm.addEventListener('pointerup',()=>{mmDrag=false});
@@ -181,6 +185,7 @@ addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();keys[k]=true;
   if(k==='escape'&&state==='menu'){if(!$('#colPop').hidden)$('#colPop').hidden=true;else if($('.card').classList.contains('setup')){if(!$('#pOnline').hidden)netReset();showPanel('home');sfx('click')}return}
   if(state!=='play')return;
+  if(k==='escape'&&typeof PL!=='undefined'&&performance.now()-PL.lostAt<400)return;
   if(k==='escape'){if(!escEl.hidden&&!$('#escConfirm').hidden)escBack();else if(escEl.hidden&&(place||mode)){place=null;mode=null}else togglePause();return}
   if(!escEl.hidden)return;
   if(k==='r'&&place){rotatePlace()}
@@ -204,8 +209,8 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
 const escEl=$('#escMenu');let escAction=null;
 function syncEscSound(){$('#escSound').textContent='Sound: '+(muted?'Off':'On')}
-function openEsc(){if(state!=='play')return;paused=!NET.on;drag=null;escBack();syncEscSound();escEl.hidden=false;$('#escResume').focus()}
-function closeEsc(){escEl.hidden=true;paused=false}
+function openEsc(){if(state!=='play')return;if(typeof plRelease==='function')plRelease();paused=!NET.on;drag=null;escBack();syncEscSound();escEl.hidden=false;$('#escResume').focus()}
+function closeEsc(){escEl.hidden=true;paused=false;if(typeof plRequest==='function')plRequest()}
 function escBack(){$('#escMain').hidden=false;$('#escConfirm').hidden=true;escAction=null}
 function escAsk(q,act){$('#escQ').textContent=q;$('#escMain').hidden=true;$('#escConfirm').hidden=false;escAction=act;$('#escNo').focus()}
 function toggleSell(){if(state!=='play')return;place=null;mode=mode==='sell'?null:'sell';sfx('click')}
@@ -239,7 +244,6 @@ $('#sideTgl').addEventListener('click',()=>{const off=document.body.classList.to
       else{const r=(de.requestFullscreen||de.webkitRequestFullscreen).call(de);if(r&&r.then)r.then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(err){}}).catch(()=>{fs.hidden=true})}}catch(err){fs.hidden=true}})}}
 if(TOUCH){$('#placeTxt').textContent='Drag to move';$('#repTxt').textContent='Tap damaged buildings to repair';$('#sellTxt').textContent='Tap a building to sell it for half price'}
 else{$('#repTxt').textContent='Click damaged buildings to repair';$('#sellTxt').textContent='Click a building to sell it for half price';
-  for(const [id,t] of [['sellBtn','Sell mode (X)'],['repBtn','Repair mode (G)'],['armyBtn','Select whole army (Ctrl+A)'],['pauseBtn','Game menu (Esc)']]){const b=document.getElementById(id);if(b)b.title=t}
   const dl=document.querySelector('.howto .keys');if(dl)dl.innerHTML=[['Left-click','Select · drag a box to select many'],['Right-click','Move / attack · cancel placement'],['Double-click','Select all of that unit type'],
     ['A + click','Attack-move'],['R','Rotate a building while placing'],['Arrows','Scroll (or move the mouse to the screen edge) · Q / E rotate · wheel zoom'],['Ctrl+A','Select whole army'],['Ctrl+1-9','Save a group · 1-9 recall it'],
     ['X / G','Sell / repair mode'],['H','Jump to your base'],['Space','Jump to the latest alert'],['Esc / P','Game menu / pause']].map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}
