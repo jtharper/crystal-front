@@ -671,3 +671,71 @@ body.desk #selBar .sbPort{flex:none;width:100%;height:150px}
 body.desk #selBar .sbInfo{max-width:none;gap:5px}
 body.desk #selBar .sbName{font-size:20px;padding-right:36px}
 body.desk #selBar .sbCard img{filter:brightness(1.3) saturate(1.1)}
+/* ---------- command console (desktop): one framed sidebar holding tools, radar, funds, categories and the build grid ---------- */
+#console{display:contents}
+#console>*{pointer-events:auto}
+body.desk{--sw:300px}
+body.desk #console{position:absolute;top:0;right:0;bottom:0;width:var(--sw);box-sizing:border-box;z-index:2;pointer-events:auto;
+  display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto auto minmax(0,1fr);
+  grid-template-areas:"tools menu" "map map" "res res" "tabs tabs" "tray tray";gap:8px;padding:10px 11px 11px 13px;
+  background:linear-gradient(90deg,rgba(230,176,67,.5) 0 1px,transparent 1px 3px,rgba(0,0,0,.6) 3px 4px,transparent 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48' viewBox='0 0 28 48'%3E%3Cpath d='M14 0l14 8v16l-14 8L0 24V8zM14 32l14 8v16M14 32L0 40v16' fill='none' stroke='%23ffffff' stroke-opacity='.035'/%3E%3C/svg%3E"),
+    linear-gradient(180deg,#1b2520,#0d1310 38%,#0a0e0c);
+  box-shadow:-10px 0 28px rgba(0,0,0,.55)}
+/* every piece sits in the grid instead of floating */
+body.desk #console>#hudRes,body.desk #console>#hudTools,body.desk #console>#pauseBtn,body.desk #console>#hudMap,body.desk #console>.rail,body.desk #console>#tray{
+  position:static;inset:auto;width:auto;height:auto;max-height:none;margin:0;transform:none}
+/* top strip: tool buttons + game menu */
+body.desk #hudTools{grid-area:tools;display:flex;gap:6px}
+body.desk #pauseBtn{grid-area:menu}
+body.desk #console .rbtn{width:42px;height:38px;border-radius:5px;background:linear-gradient(180deg,#26332c,#121915);
+  box-shadow:inset 0 0 0 1px rgba(130,170,145,.32),inset 0 1px 0 rgba(255,255,255,.07),0 2px 6px rgba(0,0,0,.45)}
+body.desk #console .rbtn.on{background:linear-gradient(180deg,#ffd77a,#c98f22);color:#1a1405}
+body.desk #console .rbtn svg{width:19px;height:19px}
+/* radar in a bezel */
+body.desk #hudMap{grid-area:map;aspect-ratio:1;padding:5px;border-radius:4px;box-sizing:border-box;position:relative!important;
+  background:#050806;box-shadow:inset 0 0 0 1px rgba(230,176,67,.4),inset 0 0 0 4px #0b100d,inset 0 0 0 5px rgba(130,170,145,.25),0 3px 10px rgba(0,0,0,.5)}
+body.desk #hudMap::before,body.desk #hudMap::after{content:'';position:absolute;width:16px;height:16px;border:2px solid var(--amber);pointer-events:none;z-index:1}
+body.desk #hudMap::before{left:-1px;top:-1px;border-right:0;border-bottom:0}
+body.desk #hudMap::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
+body.desk #mm{border-radius:2px}
+/* funds and power under the radar */
+body.desk #hudRes{grid-area:res;display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:4px;
+  background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px rgba(130,170,145,.22)}
+body.desk #hudRes .hudEmb{width:34px;height:34px;margin:0}
+body.desk #hudRes .resCol{flex:1;gap:6px}
+body.desk #hudRes .crRow{justify-content:center;gap:8px}
+body.desk #cr{font-size:24px;min-width:0;letter-spacing:.06em}
+body.desk #hudRes .crRow svg{width:20px;height:20px}
+body.desk #hudRes .pwbar{flex:1;width:auto;height:7px}
+/* category tabs: one row of square icon buttons */
+body.desk .rail{grid-area:tabs;display:block}
+body.desk #tabbar{flex-direction:row;gap:5px}
+body.desk #tabbar .tb{flex:1 1 0;width:auto;height:50px;border-radius:5px;background:linear-gradient(180deg,#222d27,#0f1512);
+  box-shadow:inset 0 0 0 1px rgba(130,170,145,.28),0 2px 6px rgba(0,0,0,.4)}
+body.desk #tabbar .tb svg{width:24px;height:24px}
+body.desk #tabbar .tb span{font-size:8px;letter-spacing:.06em;opacity:.85}
+body.desk #tabbar .tb.on{color:#1a1405;background:linear-gradient(180deg,#ffd77a,#c98f22);box-shadow:0 0 12px rgba(230,176,67,.35)}
+body.desk #tabbar .tb.on span{opacity:1}
+/* build grid: three columns of square icons filling the rest of the console */
+body.desk #tray{grid-area:tray;padding:6px;border-radius:4px;overflow-y:auto;background:rgba(0,0,0,.4);box-shadow:inset 0 0 0 1px rgba(130,170,145,.18)}
+body.desk #tray[hidden]{display:block;visibility:hidden}
+body.desk #tray .tab{gap:5px}
+body.desk #tray .bt{flex:0 0 calc((100% - 10px)/3);height:auto;aspect-ratio:1;border-radius:5px}
+body.desk #tray .bt img{inset:6% 10% 24%;width:80%;height:70%}
+body.desk #tray .bt .nm{font-size:9px;padding:3px 4px;letter-spacing:.02em}
+body.desk #tray .bt .cs{font-size:9.5px;top:3px;right:3px}
+body.desk #tray .bt .bd{font-size:9px;top:3px;left:4px}
+/* the army panel can now start at the very top on the left */
+body.desk #selBar{top:var(--st);max-height:calc(100% - var(--st) - var(--sb))}
+body.desk #hudMap{overflow:visible}
+body.desk #console>#pauseBtn{width:42px;height:38px}
+body.desk #console .rbtn{border-radius:5px!important}
+/* tall screens: two columns of bigger build cards fill the console */
+@media (min-height:900px){
+  body.desk #tray .bt{flex-basis:calc((100% - 5px)/2)}
+  body.desk #tray .bt img{inset:5% 12% 22%;width:76%;height:72%}
+  body.desk #tray .bt .nm{font-size:11px;padding:4px 6px}
+  body.desk #tray .bt .cs{font-size:11px;top:5px;right:5px}
+  body.desk #tray .bt .bd{font-size:10px;top:5px;left:6px}
+}

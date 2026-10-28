@@ -46,8 +46,10 @@ document.addEventListener('mouseup',e=>{if(!PL.on)return;
   if(PL.cap){const c=PL.clk,now=performance.now();c.n=now-c.t<350&&Math.hypot(PL.x-c.x,PL.y-c.y)<6?c.n+1:1;c.t=now;c.x=PL.x;c.y=PL.y;
     plSend(PL.cap,'pointerup',e,{detail:c.n});PL.cap=null;return}
   const p=PL.press;PL.press=null;if(!p)return;const u=plUnder();if(u!==p.el&&!(u instanceof Element&&p.el instanceof Element&&p.el.contains(u)))return;
-  if(p.button===0)p.el.click();
-  else if(p.button===2)p.el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}));
+  /* deliver to the control itself (the press may land on an icon inside it, e.g. an SVG, which has no click()) */
+  const t=p.el.closest('button,[role=tab],.bt,.stb,.sbGrp,.sbCard,a,label')||p.el,mods={bubbles:true,cancelable:true,ctrlKey:e.ctrlKey,shiftKey:e.shiftKey,metaKey:e.metaKey,altKey:e.altKey};
+  if(p.button===0){if(!t.disabled)t.dispatchEvent(new MouseEvent('click',Object.assign({button:0,detail:1},mods)))}
+  else if(p.button===2)t.dispatchEvent(new MouseEvent('contextmenu',Object.assign({button:2},mods)));
 },true);
 /* the wheel scrolls the build list when the cursor is over it, otherwise it zooms (input.js) */
 cvs.addEventListener('wheel',e=>{if(!PL.on)return;const u=plUnder();const tr=u instanceof Element&&u.closest('#tray');if(tr){tr.scrollTop+=e.deltaY;e.preventDefault();e.stopImmediatePropagation()}},{capture:true,passive:false});
