@@ -2,9 +2,9 @@
 /* ---------- AI ---------- */
 function aiInit(){
   ai={};
-  for(const sd of sides)if(sd.id){const D=DIFF[sd.diff||diffKey];ai[sd.id]={t:0,cd:1.5+sd.id*.35,wave:0,size:D.wave,next:D.first+(sd.id-1)*25}}
+  for(const sd of sides)if(sd.ai){const D=DIFF[sd.diff||diffKey];ai[sd.id]={t:0,cd:1.5+sd.id*.35,wave:0,size:D.wave,next:D.first+(sd.id-1)*25}}
 }
-function aiTick(dt){for(const sd of sides)if(sd.id&&ai[sd.id])aiSide(sd,ai[sd.id],dt)}
+function aiTick(dt){for(const sd of sides)if(sd.ai&&ai[sd.id])aiSide(sd,ai[sd.id],dt)}
 function aiSide(s,A,dt){
   A.t+=dt;A.cd-=dt;if(A.cd>0)return;A.cd=1;
   if(s.credits>300)for(const b of blds)if(b.side===s.id&&!b.dead&&b.hp<b.mhp*.6)b.repairing=true;

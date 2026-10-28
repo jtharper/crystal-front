@@ -3,13 +3,22 @@
 /* camera yaw and building facing per start corner [BL,TR,TL,BR] */
 const CYAW=[0,Math.PI,-Math.PI/2,Math.PI/2],CROT=[0,2,1,3];
 function mirror(tx,ty,w,h){return [MW-tx-w,MH-ty-h]}
-function newWorld(sd0,facs,opt){
+/* ---------- fixed-step simulation ---------- */
+let simTick=0,simAcc=0;
+function simStep(){SIMIN++;try{if(typeof netRunTick==='function')netRunTick(simTick);update(TICK)}finally{SIMIN--}simTick++}
+function simCanStep(){return typeof netCanStep!=='function'||netCanStep(simTick)}
+/* fingerprint of everything that matters in the game state, compared between players to catch any desync */
+const _hb=new Float64Array(1),_hw=new Uint32Array(_hb.buffer);
+function simHash(){let h=2166136261>>>0;const f=v=>{_hb[0]=v||0;h=Math.imul(h^_hw[0],16777619);h=Math.imul(h^_hw[1],16777619)};
+  for(const u of units){f(u.id);f(u.x);f(u.y);f(u.hp);f(u.ang)}for(const b of blds){f(b.id);f(b.hp);f(b.side)}for(const s of sides)f(s.credits);f(projs.length);return h>>>0}
+function newWorld(sd0,facs,opt){SIMIN++;try{newWorld0(sd0,facs,opt)}finally{SIMIN--}}
+function newWorld0(sd0,facs,opt){
   opt=opt||{};
   seed(sd0>>>0);curMap=MAPS[pickMap];setMapSize(mapSize(curMap));
-  units=[];blds=[];projs=[];fxs=[];sel=[];groups={};nid=1;time=0;paused=false;mode=null;place=null;drag=null;lastAlert=-99;alertPos=null;alerts=[];
+  units=[];blds=[];projs=[];fxs=[];sel=[];groups={};nid=1;time=0;fogT=0;winT=0;regT=0;cmdQueue=[];paused=false;mode=null;place=null;drag=null;lastAlert=-99;alertPos=null;alerts=[];
   genMap();
   const pc=playerCol(),cols=opt.cols||[pc,...COL_ORDER.filter(c=>c!==pc)],cor=opt.corners||[0,1,2,3];
-  sides=facs.map((fc,id)=>({id,fac:fc,col:cols[id],corner:cor[id],team:(opt.teams||[])[id]||0,diff:(opt.diffs||[])[id]||diffKey,credits:opt.credits||2500,q:{b:[],d:[],i:[],v:[]},ready:null,readyD:null,pw:0,use:0,low:false}));
+  sides=facs.map((fc,id)=>({id,fac:fc,col:cols[id],corner:cor[id],team:(opt.teams||[])[id]||0,ai:opt.ai&&opt.ai[id]!=null?!!opt.ai[id]:id!==0,diff:(opt.diffs||[])[id]||diffKey,credits:opt.credits||2500,q:{b:[],d:[],i:[],v:[]},ready:null,readyD:null,pw:0,use:0,low:false}));
   if(typeof glbNeed==='function')for(const sd of sides)glbNeed(sd.fac);
   for(const sd of sides){
     const c=sd.corner,m=(tx,ty,w,h)=>cornerBox(c,tx,ty,w,h),r0=CROT[c];
@@ -28,11 +37,12 @@ function newWorld(sd0,facs,opt){
   if(!fogC||fogC.width!==MW){fogC=document.createElement('canvas');fogC.width=MW;fogC.height=MH;fogX=fogC.getContext('2d');fogImg=fogX.createImageData(MW,MH)}
 }
 let menuSeed=0;
-function menuScene(same){
+function menuScene(same){SIMIN++;try{menuScene0(same)}finally{SIMIN--}}
+function menuScene0(same){
   if(!renderer)return;
   if(!same||!menuSeed)menuSeed=(Date.now()^0x2545f491)>>>0;
   newWorld(menuSeed,[pickFac,(pickFac+1)%3]);
-  const tryB=(t,tx,ty,r)=>{if(validPlace(0,t,tx,ty,0,r))addBld(t,0,tx,ty,r)};
+  const tryB=(t,tx,ty,r)=>{if(validPlace(ME,t,tx,ty,0,r))addBld(t,0,tx,ty,r)};
   const oy=MH-64;tryB('power',9,50+oy,0);tryB('refinery',9,53+oy,0);tryB('barracks',13,47+oy,0);tryB('factory',13,55+oy,3);tryB('turret',15,50+oy,0);tryB('power',4,47+oy,0);tryB('turret',17,46+oy,0);
   for(let i=0;i<5;i++){const c=tc(findFree(15+(i%3)*1.5,51+oy+(i/3|0)*1.5));const u=addUnit(i<3?'tank':'rifle',0,c.x,c.y);u.ang=u.tang=-.8}
   sel=[];place=null;mode=null;if(typeof hideGameFx==='function')hideGameFx();
@@ -46,9 +56,9 @@ function menuFadeIn(){const cv=$('#cv');if(!cv.classList.contains('fadeOut'))ret
 let menuCamSet=false,menuFadeT=0;
 /* the player's colour or faction changed: swap only the models that changed, so the backdrop never restarts */
 function menuRefresh(){
-  if(state!=='menu'||!sides||!sides[0])return;
+  if(state!=='menu'||!sides||!sides[ME])return;
   const pc=playerCol(),chg=new Set();
-  if(sides[0].fac!==pickFac||sides[0].col!==pc){sides[0].fac=pickFac;sides[0].col=pc;chg.add(0)}
+  if(sides[ME].fac!==pickFac||sides[ME].col!==pc){sides[ME].fac=pickFac;sides[ME].col=pc;chg.add(0)}
   const o=sides[1];if(o&&(o.fac===pickFac||o.col===pc)){if(o.fac===pickFac)o.fac=(pickFac+1)%3;if(o.col===pc)o.col=COL_ORDER.find(c=>c!==pc);chg.add(1)}
   if(typeof glbNeed==='function')glbNeed(pickFac);
   menuDrop(e=>chg.has(e.side));
@@ -85,16 +95,17 @@ function lobbyResolve(){
   act.forEach((s,k)=>{if(cols[k]==null){const c=COL_ORDER.find(c=>!used.has(c));cols[k]=c;used.add(c)}});
   return {facs,cols,corners:lobbyCorners(act),teams:act.map(s=>s.team|0),diffs:act.map(s=>s.kind==='you'?'normal':s.diff||pickDiff),credits:LOBBY.credits||2500};
 }
-function startGame(dk){
+/* cfg (optional): a complete match setup {seed,facs,cols,corners,teams,diffs,credits,ai} - used by online matches and tests */
+function startGame(dk,cfg){
   unlocked.d=unlocked.i=unlocked.v=false;mode=null;showTab("b");$('#ovTitle').hidden=true;
   document.body.classList.remove('menu');
-  diffKey=dk;SANDBOX=pickMode==='sandbox';document.body.classList.toggle('sandbox',SANDBOX);
-  const L=lobbyResolve();newWorld(Date.now()^0x5bd1e995,L.facs,L);
-  document.documentElement.style.setProperty('--tc',TCOL(0));applyThumbs();
-  {const im=$('#hudEmb');im.src=emblemURL(sides[0].fac,sides[0].col);im.alt=FACTIONS[sides[0].fac].name;im.hidden=false}
-  for(const b of blds)if(b.side!==0)remember(b);showPanel(null);
-  aiInit();state='play';
-  {const c=sides[0].corner,y=blds.find(b=>b.side===0&&b.type==='yard');yaw=CYAW[c];lastRot=CROT[c];mmRot=NaN;
+  diffKey=dk;SANDBOX=!cfg&&pickMode==='sandbox';document.body.classList.toggle('sandbox',SANDBOX);
+  const L=cfg||lobbyResolve();newWorld(L.seed!=null?L.seed:(Date.now()^0x5bd1e995),L.facs,L);
+  document.documentElement.style.setProperty('--tc',TCOL(ME));applyThumbs();
+  {const im=$('#hudEmb');im.src=emblemURL(sides[ME].fac,sides[ME].col);im.alt=FACTIONS[sides[ME].fac].name;im.hidden=false}
+  for(const b of blds)if(b.side!==ME)remember(b);showPanel(null);
+  SIMIN++;try{aiInit()}finally{SIMIN--}state='play';simTick=0;simAcc=0;
+  {const c=sides[ME].corner,y=blds.find(b=>b.side===ME&&b.type==='yard');yaw=CYAW[c];lastRot=CROT[c];mmRot=NaN;
    const ux=-Math.sin(yaw),uy=-Math.cos(yaw),rx=Math.cos(yaw),ry=-Math.sin(yaw);cam.x=y.x+ux*T*1.5+rx*T*.5;cam.y=y.y+uy*T*1.5+ry*T*.5}
   camDist=zDef();camH=hAt(cam.x,cam.y);build3D();clampCam();updateCamera();updFog();if(typeof warmShaders==='function')warmShaders();
   $('#overlay').hidden=true;escEl.hidden=true;clearTimeout(menuFadeT);$('#cv').classList.remove('fadeOut');
@@ -104,8 +115,9 @@ function startGame(dk){
 function endGame(win){
   say(win?'Mission accomplished':'Mission failed','end',0);state='over';sfx(win?'win':'lose');
   $('#ovTitle').textContent=win?'Victory':'Defeat';$('#ovTitle').hidden=false;
-  $('#ovText').textContent=win?(sides.filter(s=>enemy(0,s.id)).length>1?'Every rival commander has fallen.':FACTIONS[facOf(sides.find(s=>enemy(0,s.id)).id)].name+' has been defeated.'):'Your base has fallen.';showPanel('end');
-  $('#overlay').hidden=false;
+  $('#ovText').textContent=win?(sides.filter(s=>enemy(ME,s.id)).length>1?'Every rival commander has fallen.':FACTIONS[facOf(sides.find(s=>enemy(ME,s.id)).id)].name+' has been defeated.'):'Your base has fallen.';showPanel('end');
+  $('#againBtn').hidden=NET.on;$('#overlay').hidden=false;
+  if(NET.on){NET.ended=true;olWait(false);if(sides[ME].resigned)$('#ovText').textContent='You surrendered.';else if(sides.some(sd=>sd.id!==ME&&sd.resigned))$('#ovText').textContent='Your opponent surrendered.';setTimeout(netClose,2000)}
 }
 function update(dt){
   time+=dt;
@@ -114,7 +126,7 @@ function update(dt){
   for(const b of blds)if(b.type==='spike'&&b.side>=0&&!b.dead){sides[b.side].credits+=SPIKE_INC*dt;if(rng()<dt*1.2)fxs.push({t:'ping',x:b.x,y:b.y,age:0,life:.9,r:30,col:'#c46bff'})}
   for(const b of blds){if(!b.repairing||b.dead)continue;if(b.hp>=b.mhp){b.repairing=false;continue}
     const sd=sides[b.side],bd=BDEF[b.type],amt=Math.min(b.mhp-b.hp,b.mhp*.045*dt),cost=amt*((bd.cost||1500)/bd.hp)*.4;
-    if(SANDBOX&&b.side===0||sd.credits>=cost){if(!(SANDBOX&&b.side===0))sd.credits-=cost;b.hp+=amt;if(rng()<dt*5)fxs.push({t:'flash',x:b.x+(rng()-.5)*b.w*T*.6,y:b.y+(rng()-.5)*b.h*T*.6,age:0,life:.15,r:3})}}
+    if(SANDBOX&&b.side===ME||sd.credits>=cost){if(!(SANDBOX&&b.side===ME))sd.credits-=cost;b.hp+=amt;if(rng()<dt*5)fxs.push({t:'flash',x:b.x+(rng()-.5)*b.w*T*.6,y:b.y+(rng()-.5)*b.h*T*.6,age:0,life:.15,r:3})}}
   for(const u of units)if(!u.dead)updUnit(u,dt);
   for(const b of blds)if(!b.dead&&BDEF[b.type].dmg)updTurret(b,dt);
   /* War Factories repair friendly vehicles parked nearby */
@@ -147,17 +159,19 @@ function update(dt){
     for(let i=0;i<cryMax.length;i++){const mx=cryMax[i];if(!mx||cry[i]>=mx)continue;
       if(occ[i]){continue}cryIdle[i]+=st;if(cryIdle[i]<CRY_WAIT)continue;cry[i]=Math.min(mx,cry[i]+mx/CRY_REGROW*st)}}
   winT-=dt;if(winT<=0){winT=1;
-    if(!blds.some(b=>enemy(0,b.side)&&!BDEF[b.type].cap))endGame(true);
-    else if(!blds.some(b=>b.side===0&&!BDEF[b.type].cap))endGame(false)}
+    /* a side is out when it has no real buildings left or has surrendered */
+    const alive=sd=>!sd.resigned&&blds.some(b=>b.side===sd.id&&!BDEF[b.type].cap);
+    if(!sides.some(sd=>enemy(ME,sd.id)&&alive(sd)))endGame(true);
+    else if(!alive(sides[ME]))endGame(false)}
 }
 let REVEAL=false;
 function updFog(){
   for(let i=0;i<vis.length;i++)if(vis[i]===2)vis[i]=1;
   const rev=(e,r)=>{const cx=(e.x/T)|0,cy=(e.y/T)|0;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>r*r+r)continue;const x=cx+dx,y=cy+dy;if(x>=0&&y>=0&&x<MW&&y<MH)vis[y*MW+x]=2}};
-  for(const u of units)if(ally(0,u.side))rev(u,UDEF[u.type].vis);
-  for(const b of blds)if(ally(0,b.side))rev(b,BDEF[b.type].vis);
+  for(const u of units)if(ally(ME,u.side))rev(u,UDEF[u.type].vis);
+  for(const b of blds)if(ally(ME,b.side))rev(b,BDEF[b.type].vis);
   if(REVEAL)vis.fill(2);
-  for(const b of blds)if(b.side!==0&&visNow(b)){b.seen=true;remember(b)}
+  for(const b of blds)if(b.side!==ME&&visNow(b)){b.seen=true;remember(b)}
   for(const [id,m] of memB)if(visNow(m)&&!blds.some(b=>b.id===id&&!b.dead))forget(id);
   for(let i=0;i<vis.length;i++)if(vis[i]===2)cryMem[i]=cry[i];
   const d=fogImg.data,vd=visImg.data;
@@ -168,4 +182,4 @@ function updFog(){
 function visNow(b){for(let y=b.ty;y<b.ty+b.h;y++)for(let x=b.tx;x<b.tx+b.w;x++)if(vis[y*MW+x]===2)return true;return false}
 function remember(b){const m=memB.get(b.id)||{id:b.id,type:b.type,side:b.side,tx:b.tx,ty:b.ty,w:b.w,h:b.h,rot:b.rot||0,x:b.x,y:b.y};memB.set(b.id,m)}
 function forget(id){memB.delete(id);const g=memG.get(id);if(g){if(g.parent)g.parent.remove(g);memG.delete(id)}}
-const seenBy0=e=>ally(0,e.side)||(e.k==='b'?(memB.has(e.id)||visNow(e)):vis[ti(e.x,e.y)]===2&&!e.cloaked);
+const seenBy0=e=>ally(ME,e.side)||(e.k==='b'?(memB.has(e.id)||visNow(e)):vis[ti(e.x,e.y)]===2&&!e.cloaked);

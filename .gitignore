@@ -7,3 +7,6 @@ models/*.png
 .DS_Store
 Thumbs.db
 .v2bak/
+server/node_modules/
+server/.wrangler/
+.wrangler/

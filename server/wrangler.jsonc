@@ -1,0 +1,17 @@
+{
+  // Crystal Front online relay: one Durable Object per game room passes messages between the two players.
+  // Deployed by Cloudflare Workers Builds from this folder (root directory: server).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crystal-front-mp",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  "vars": {
+    // sites allowed to open game connections (a host name, or a suffix starting with ".")
+    "ALLOWED_ORIGINS": "play.crystalfront.fun,.crystal-front.pages.dev,crystal-front.pages.dev,localhost,127.0.0.1"
+  },
+  "observability": { "enabled": true }
+}
