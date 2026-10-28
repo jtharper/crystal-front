@@ -65,7 +65,11 @@ function netMsg(s){
       if(m.v!==BUILD_ID){netSend({t:'bye',msg:'Your game is a different version from the host. Reload the page (Ctrl+Shift+R) and join again.'});olHint('A player with a different game version tried to join.');return}
       NET.peer=true;NET.lobby.p[1]=olFix(m.p,1);olPush();sfx('ready');return;
     case 'me':if(NET.slot!==0||!NET.lobby)return;NET.lobby.p[1]=olFix(m.p,1);olPush();return;
-    case 'lobby':if(NET.slot!==1)return;NET.lobby=m.l;NET.peer=true;olRender();return;
+    case 'lobby':if(NET.slot!==1)return;NET.lobby=m.l;NET.peer=true;olRender();
+      /* if the host's copy of my choices is stale (messages crossed), send them again */
+      {const mine=m.l&&m.l.p&&m.l.p[1],me=olMe(),hc=m.l&&m.l.p&&m.l.p[0]?m.l.p[0].col:-1;
+       if(mine&&(mine.fac!==me.fac||mine.name!==me.name||(mine.col!==me.col&&me.col!==hc)))netSend({t:'me',p:me})}
+      return;
     case 'echo':netSend({t:'echo2',ts:m.ts});return;
     case 'echo2':NET.rtt2=performance.now()-m.ts;return;
     case 'start':if(NET.slot!==1)return;netBegin(m.cfg);return;
@@ -166,7 +170,7 @@ function olRender(){
     if(f==='fac'){pickFac=v;try{localStorage.setItem('cf-fac',v)}catch(er){}if(typeof glbNeed==='function')glbNeed(v)}
     if(f==='col'){pickCol=v;try{localStorage.setItem('cf-col',v)}catch(er){}}
     sfx('click');olMeChanged();if(state==='menu')menuRefresh()});
-  $('#olGo').addEventListener('click',()=>{sfx('click');netStart()});
+  $('#olGo').addEventListener('click',()=>{sfx('click');netStart();if(typeof plRequest==='function')plRequest()});
   /* measure the player-to-player round trip while in the lobby (sets the command delay) */
   setInterval(()=>{if(NET.state==='lobby'&&NET.peer)netSend({t:'echo',ts:performance.now()})},2000);
 }

@@ -630,3 +630,13 @@ body.online #escRestart{display:none}
 /* keep the Play lobby the same height on both tabs */
 .olStart{min-height:calc(clamp(126px,34vh,210px) + clamp(120px,30vh,176px))}
 .olCol p{text-align:left}
+/* cursor lock: the game draws its own cursor */
+#vcur{position:absolute;left:0;top:0;z-index:50;width:26px;height:26px;pointer-events:none;will-change:transform}
+#vcur[hidden]{display:none}
+#vcur svg{display:block;width:26px;height:26px;overflow:visible;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.8))}
+#vcur .ar{fill:#f4f7f3;stroke:#0b0f0c;stroke-width:1.4;stroke-linejoin:round}
+#vcur .xh{display:none;fill:none;stroke:#ff6a50;stroke-width:2}
+#vcur[data-k="cross"]{margin:-13px 0 0 -13px}#vcur[data-k="cross"] .ar{display:none}#vcur[data-k="cross"] .xh{display:block}
+#vcur[data-k="copy"] .ar{fill:#8dff9f}#vcur[data-k="point"] .ar{fill:#ffd27a}
+body.plOn #cv{cursor:none}
+.plHov{filter:brightness(1.25)}
