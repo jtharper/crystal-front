@@ -46,7 +46,7 @@ function menuScene0(same){
   const oy=MH-64;tryB('power',9,50+oy,0);tryB('refinery',9,53+oy,0);tryB('barracks',13,47+oy,0);tryB('factory',13,55+oy,3);tryB('turret',15,50+oy,0);tryB('power',4,47+oy,0);tryB('turret',17,46+oy,0);
   for(let i=0;i<5;i++){const c=tc(findFree(15+(i%3)*1.5,51+oy+(i/3|0)*1.5));const u=addUnit(i<3?'tank':'rifle',0,c.x,c.y);u.ang=u.tang=-.8}
   sel=[];place=null;mode=null;if(typeof hideGameFx==='function')hideGameFx();
-  vis.fill(2);build3D();state='menu';document.body.classList.add('menu');
+  vis.fill(2);CFE.value=1;build3D();state='menu';document.body.classList.add('menu');
   /* a rebuild of the same backdrop keeps the slowly circling camera where it is */
   if(!same||!menuCamSet){cam.x=11*T;cam.y=(MH-13)*T;yaw=.5;menuCamSet=true}camDist=DESK?600:470;camH=hAt(cam.x,cam.y);updFog();
   menuFadeIn();
@@ -104,7 +104,7 @@ function startGame(dk,cfg){
   document.documentElement.style.setProperty('--tc',TCOL(ME));applyThumbs();
   {const im=$('#hudEmb');im.src=emblemURL(sides[ME].fac,sides[ME].col);im.alt=FACTIONS[sides[ME].fac].name;im.hidden=false}
   for(const b of blds)if(b.side!==ME)remember(b);showPanel(null);
-  SIMIN++;try{aiInit()}finally{SIMIN--}state='play';simTick=0;simAcc=0;
+  SIMIN++;try{aiInit()}finally{SIMIN--}state='play';CFE.value=0;simTick=0;simAcc=0;
   {const c=sides[ME].corner,y=blds.find(b=>b.side===ME&&b.type==='yard');yaw=CYAW[c];lastRot=CROT[c];mmRot=NaN;
    const ux=-Math.sin(yaw),uy=-Math.cos(yaw),rx=Math.cos(yaw),ry=-Math.sin(yaw);cam.x=y.x+ux*T*1.5+rx*T*.5;cam.y=y.y+uy*T*1.5+ry*T*.5}
   camDist=zDef();camH=hAt(cam.x,cam.y);build3D();clampCam();updateCamera();updFog();if(typeof warmShaders==='function')warmShaders();
