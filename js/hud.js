@@ -23,7 +23,7 @@ for(const c of ['b','d','i','v']){
     b.type='button';b.className='bt';b.dataset.t=t;
     const reqs=(d.req||[]).map(r=>BDEF[r].name);if(c==='i')reqs.push('Barracks');if(c==='v')reqs.push('War Factory');
     b.setAttribute('aria-label',`${d.name}. Needs: ${reqs.join(', ')||'none'}. Build time ${d.time}s.`);
-    b.innerHTML=`<img alt=""><i class="pg"></i><span class="nm">${d.name}</span><span class="cs">$${d.cost}</span><span class="bd"></span><i class="pgb"></i>`;
+    b.innerHTML=`<img alt=""><i class="pg"></i><span class="nm">${d.name}</span><span class="cs">$${d.cost}</span><span class="bd"></span><b class="qn" hidden></b><i class="pgb"></i>`;
     b.addEventListener('click',()=>onBuild(t));
     b.addEventListener('contextmenu',e=>{e.preventDefault();onCancel(t)});
     sec.appendChild(b);btn[t]=b;
@@ -79,7 +79,8 @@ function updUI(){
     let badge='',pg=0;
     if(isStruct(c)&&s[RD(c)]===t)badge='PLACE';
     else if(first){pg=first.prog*100;badge=s.credits<1?'NO FUNDS':(s.low?'LOW POWER':Math.floor(pg)+'%')}
-    if(!isStruct(c)&&n>1)badge+=` ×${n}`;
+    /* how many of this unit are waiting, across every barracks / war factory (shown even for a single one) */
+    const tot=isStruct(c)?0:qAll(s,c).filter(i=>i.t===t).length,qn=b.querySelector('.qn');qn.hidden=!tot;qn.textContent=tot||'';
     if(!badge&&atCap(s,t))badge='MAX';
     b.classList.toggle('locked',!canBuild(s,t));
     b.classList.toggle('ready',isStruct(c)&&s[RD(c)]===t);
