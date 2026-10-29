@@ -109,10 +109,21 @@ function updSel(){
   const chip=$('#selChip'),bar=$('#selBar'),list=sel.filter(e=>!e.dead&&e.side===ME);chip.hidden=true;
   if(!list.length||state!=='play'){bar.hidden=true;selBarOn=false;selKey='';selBarOff='';return}
   const one=list.length===1?list[0]:null,pc=one&&one.k==='b'&&(one.type==='barracks'||one.type==='factory')?(one.type==='barracks'?'i':'v'):null;
-  const us=list.filter(e=>e.k==='u'),key=list.map(e=>e.id).join(',');
-  if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else selRefs=[]}
-  selBarOn=us.length>0&&selBarOff!==key&&!place;bar.hidden=!selBarOn;
+  const us=list.filter(e=>e.k==='u'),bs=list.filter(e=>e.k==='b'),key=list.map(e=>e.id).join(',');
+  if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else if(bs.length&&DESK)buildBldBar(bs[0]);else selRefs=[]}
+  selBarOn=(us.length>0||(bs.length>0&&DESK))&&selBarOff!==key&&!place;bar.hidden=!selBarOn;
   for(const r of selRefs){
+    if(r.bld){const b=r.bld,d=BDEF[b.type],f=Math.max(0,b.hp/b.mhp),sd=sides[b.side];
+      r.bar.style.width=(f*100)+'%';r.bar.className=f>.55?'':f>.25?'warn':'low';r.txt.textContent=Math.ceil(Math.max(0,b.hp))+' / '+b.mhp;
+      if(r.rep){r.rep.classList.toggle('on',!!b.repairing);r.rep.textContent=b.repairing?'Repairing':'Repair'}
+      const st=[];if(d.power>0)st.push(`<span class="g">+${d.power} power</span>`);else if(d.power<0)st.push(`${d.power} power`);
+      if(sd&&sd.low&&(d.dmg||d.power<0))st.push('<span class="r">Low power: running slow / offline</span>');
+      if(b.repairing)st.push('<span class="g">Repairing</span>');
+      const sh=st.join(' · ');if(r.stat.innerHTML!==sh)r.stat.innerHTML=sh;
+      if(r.q){const q=prodQ(b),sig=q.map(i=>i.t).join(',');
+        if(r.q.dataset.sig!==sig){r.q.dataset.sig=sig;r.q.innerHTML=q.length?q.map((i,k)=>`<span class="sbQi"><img alt="" src="${thumb(i.t,skinOf(b.side),96)}">${k?'':'<i><b></b></i>'}</span>`).join(''):'<span class="sbQe">Nothing in production</span>'}
+        const pb=r.q.querySelector('i b');if(pb&&q[0])pb.style.width=(q[0].prog*100)+'%'}
+      continue}
     if(r.all){let hp=0,mx=0,n=0;for(const e of r.all)if(!e.dead){hp+=Math.max(0,e.hp);mx+=e.mhp;n++}const f=mx?hp/mx:0;
       r.bar.style.width=(f*100)+'%';r.bar.className=f>.55?'':f>.25?'warn':'low';if(r.cnt)r.cnt.textContent='×'+n;continue}
     if(r.ab){const rws=r.list.filter(e=>e.type==='rift'&&!e.dead),cd=Math.min(...rws.map(e=>e.rcd>0?e.rcd:0));r.ab.disabled=cd>0;r.ab.textContent=cd>0?'Rift '+Math.ceil(cd)+'s':'Rift Jump';continue}
@@ -162,6 +173,25 @@ function buildSelBar(us){
   }
   if(us.some(e=>e.type==='rift')){const ab=document.createElement('button');ab.type='button';ab.className='sbAb';ab.textContent='Rift Jump';sp.appendChild(ab);
     ab.addEventListener('click',()=>{if(ab.disabled)return;place=null;mode='rift';sfx('click');updUI()});selRefs.push({ab,list:us})}
+  sp.querySelector('.sbX').addEventListener('click',()=>{sel=[];sfx('click');updSel();updUI()});
+}
+/* a selected structure: picture, what it does, health, status, Repair / Sell; production buildings show their queue */
+function buildBldBar(b){
+  const sp=$('#selBar');selRefs=[];sp.classList.remove('sbTiles');sp.style.width='';
+  const d=BDEF[b.type],ro=ROLE[b.type]||[''],own=b.side===ME,canSell=own&&!d.cap&&b.type!=='yard',prod=b.type==='barracks'||b.type==='factory';
+  const fight=d.dmg?`<div class="sbRow"><span class="lbl">Range</span><span class="sbV">${d.range} tiles</span></div><div class="sbRow"><span class="lbl">Damage</span><span class="sbV">${d.dmg} every ${d.rof}s</span></div>`:'';
+  sp.innerHTML=`<div class="sbOne sbBld"><div class="sbPort"><img alt="" src="${thumb(b.type,skinOf(b.side),220)}"></div>
+    <div class="sbInfo"><div class="sbName">${d.name}</div><div class="sbRole">${ro[0]||''}</div>
+    <p class="sbDesc">${DESC[b.type]||''}</p>
+    <div class="sbRow"><span class="lbl">Health</span><span class="sbV ht"></span></div><div class="hp hpm"><i></i></div>${fight}
+    <div class="sbStat"></div>
+    ${prod?`<div class="sbRow"><span class="lbl">Production</span></div><div class="sbQ"></div><div class="sbHint">${TOUCH?'Tap':'Right-click'} the ground to set its rally point</div>`:''}
+    ${own?`<div class="sbBtns"><button type="button" class="scBtn" data-a="rep">Repair</button>${canSell?`<button type="button" class="scBtn sell" data-a="sell">Sell $${Math.floor((d.cost||0)*.5)}</button>`:''}</div>`:''}
+    </div></div><button type="button" class="sbX" aria-label="Deselect">&#10005;</button>`;
+  const rb=sp.querySelector('[data-a="rep"]'),sb=sp.querySelector('[data-a="sell"]');
+  selRefs.push({bld:b,bar:sp.querySelector('.hpm i'),txt:sp.querySelector('.ht'),rep:rb,stat:sp.querySelector('.sbStat'),q:sp.querySelector('.sbQ')});
+  if(rb)rb.addEventListener('click',()=>{if(b.hp>=b.mhp&&!b.repairing){msg(d.name+' is not damaged','');return}issue({c:'repair',b:b.id,on:b.repairing?0:1});sfx('click')});
+  if(sb)sb.addEventListener('click',()=>{issue({c:'sell',b:b.id});sel=[];sfx('click');updSel()});
   sp.querySelector('.sbX').addEventListener('click',()=>{sel=[];sfx('click');updSel();updUI()});
 }
 function buildSel(list){
@@ -233,14 +263,16 @@ function infoHTML(t,side){
 function showInfo(t,side,x,y,anchor){
   const k=t+':'+side;if(icKey!==k){icEl.innerHTML=infoHTML(t,side);icKey=k}
   icEl.hidden=false;const hr=$('#hud').getBoundingClientRect(),w=icEl.offsetWidth,h=icEl.offsetHeight;
-  let lx,ly;if(anchor==='above'){lx=x-w/2;ly=y-h-10}else{lx=x+18;ly=y-h/2;if(lx+w>hr.width-8)lx=x-w-18}
+  let lx,ly;if(anchor==='above'){lx=x-w/2;ly=y-h-10}else if(anchor==='left'){lx=x-w-12;ly=y-h/2}else{lx=x+18;ly=y-h/2;if(lx+w>hr.width-8)lx=x-w-18}
   icEl.style.left=Math.max(8,Math.min(hr.width-w-8,lx))+'px';icEl.style.top=Math.max(8,Math.min(hr.height-h-8,ly))+'px';
 }
 function hideInfo(){icEl.hidden=true}
 /* build cards: hover with a mouse, or press and hold on touch */
 for(const t in btn){const b=btn[t];let lp=0,shown=false;
   const at=()=>{const r=b.getBoundingClientRect(),hr=$('#hud').getBoundingClientRect();return [r.left+r.width/2-hr.left,r.top-hr.top]};
-  b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'){const [x,y]=at();showInfo(t,0,x,y,'above')}});
+  /* desktop: the card opens to the left of the command console, level with the hovered card */
+  const atL=()=>{const r=b.getBoundingClientRect(),c=$('#console').getBoundingClientRect(),hr=$('#hud').getBoundingClientRect();return [Math.min(r.left,c.left)-hr.left,r.top+r.height/2-hr.top]};
+  b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'){if(DESK){const [x,y]=atL();showInfo(t,ME,x,y,'left')}else{const [x,y]=at();showInfo(t,ME,x,y,'above')}}});
   b.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hideInfo();clearTimeout(lp)});
   b.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;shown=false;clearTimeout(lp);lp=setTimeout(()=>{const [x,y]=at();showInfo(t,0,x,y,'above');shown=true;try{navigator.vibrate&&navigator.vibrate(12)}catch(er){}},420)});
   for(const ev of ['pointerup','pointercancel'])b.addEventListener(ev,e=>{clearTimeout(lp);if(e.pointerType!=='mouse'&&shown)setTimeout(hideInfo,1600)});
