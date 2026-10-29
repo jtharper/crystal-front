@@ -23,7 +23,10 @@ function plSend(target,type,src,extra){const r=cvs.getBoundingClientRect();
   target.dispatchEvent(new PointerEvent(type,Object.assign({bubbles:true,cancelable:true,clientX:r.left+PL.x,clientY:r.top+PL.y,pointerId:1,pointerType:'mouse',isPrimary:true,
     button:src.button,buttons:src.buttons,shiftKey:src.shiftKey,ctrlKey:src.ctrlKey,altKey:src.altKey,metaKey:src.metaKey},extra||{})))}
 /* hover highlight for HUD buttons (CSS :hover can't follow a drawn cursor) */
-function plHover(el){const b=el&&el!=='map'&&el!=='mm'?el.closest('button,.bt,.stb'):null;if(b===PL.hov)return;if(PL.hov)PL.hov.classList.remove('plHov');PL.hov=b;if(b)b.classList.add('plHov')}
+function plHover(el){const b=el&&el!=='map'&&el!=='mm'?el.closest('button,.bt,.stb'):null;if(b===PL.hov)return;
+  /* hover cards and highlights need enter / leave events, which a locked mouse never produces */
+  const pe=(t,type)=>t.dispatchEvent(new PointerEvent(type,{bubbles:false,pointerType:'mouse',pointerId:1}));
+  if(PL.hov){PL.hov.classList.remove('plHov');pe(PL.hov,'pointerleave')}PL.hov=b;if(b){b.classList.add('plHov');pe(b,'pointerenter')}}
 document.addEventListener('pointerlockchange',()=>{
   const on=document.pointerLockElement===cvs;
   if(on&&!PL.on){PL.on=true;PL.x=Math.max(0,Math.min(W-1,mouse.x||W/2));PL.y=Math.max(0,Math.min(H-1,mouse.y||H/2));mouse.in=true;ptrMouse=true;PL.el.hidden=false;document.body.classList.add('plOn');plDraw()}
@@ -35,7 +38,8 @@ document.addEventListener('mousemove',e=>{if(!PL.on)return;
   PL.x=Math.max(0,Math.min(W-1,PL.x+e.movementX));PL.y=Math.max(0,Math.min(H-1,PL.y+e.movementY));plDraw();
   const u=plUnder();plHover(PL.cap?null:u);
   if(PL.cap){plSend(PL.cap,'pointermove',e);return}
-  plSend(u==='mm'?mm:cvs,'pointermove',e);if(u!=='map'&&u!=='mm')mouse.in=true;
+  /* over the battlefield or radar: a real move there. Over the console / panels: just track the position (no map hover) */
+  if(u==='map'||u==='mm')plSend(u==='mm'?mm:cvs,'pointermove',e);else{mouse.x=PL.x;mouse.y=PL.y;mouse.in=true}
 });
 document.addEventListener('mousedown',e=>{if(!PL.on)return;e.preventDefault();
   const u=plUnder();
