@@ -380,6 +380,7 @@ const GEMB={tank_v:[1,-6.2,5.87,0,1.9],htank_v:[1,-8.5,7.27,0,2.4],mlrs_v:[0,11.
 const GER={htank_s:3,mlrs_s:1.8,buggy_s:1.6,arty_s:2.2,harv_s:2.2,stank_s:1.8,htank_h:2.6,mlrs_h:2.2,buggy_h:1.4,arty_h:2.2,harv_h:2.2};
 function buildUnit(type,f){
   if(UDEF[type].air)return buildAir(type,f);
+  if(type==='mcv')return buildCrawler(f);
   const g=new THREE.Group(),st=f>>4,s=f&15;
   {const ur=UDEF[type].r+3;P(g,G.ring(ur,.55),TG[s],0,.5,0)}
   /* Blender infantry (see /blender/infantry.py): legs swing from the hips, the gun group recoils */
@@ -442,6 +443,15 @@ function buildAir(type,f){
   else if(type==='gunship'){P(inner,G.box(30,9,10),TD[s],0,8,0);for(const z of [-16,16])P(inner,G.cyl(7,7,4,16),MT.gun,0,10,z);P(inner,G.box(22,2,3),MT.gun,-18,10,0)}
   else{P(inner,G.box(48,6,8),TD[s],0,7,0);P(inner,new THREE.BoxGeometry(18,1.4,46),MT.gun,-8,7,0)}
   inner.scale.setScalar(AIRS[type]||1);return g;
+}
+/* Outpost Crawler (see /blender/outpost.py) */
+function buildCrawler(f){
+  const g=new THREE.Group(),s=f&15;P(g,G.ring(UDEF.mcv.r+3,.55),TG[s],0,.5,0);
+  const pts=GLB.scene.crawler&&glbInto(g,'crawler',f,0,[]);
+  if(pts){if(pts.emblem)uEmblem(g,f,pts.emblem[0],pts.emblem[1]+.1,pts.emblem[2],4.2);return g}
+  for(const x of [-21,0,21])for(const z of [-14.6,14.6])P(g,G.whl(5.6,4.6),MT.dark,x,5.6,z);
+  P(g,G.box(62,5,22),MT.gun,0,9.5,0);P(g,G.box(15,9,22),TD[s],25,16,0);P(g,G.box(40,14,24),MT.concrete,-8,19,0);P(g,G.box(40.6,2,24.6),TD[s],-8,22.5,0);
+  return g;
 }
 function addBin(g,x){const bin=part(G.box(16,1,13),MT.crys,x,13,0);bin.name='bin';bin.userData.keep=true;bin.scale.y=.01;g.add(bin)}
 /* Iron Syndicate: angular, spiked, heavy */
@@ -574,6 +584,13 @@ function buildBld(type,f){
   const transformer=(x,z)=>{box(x,PT+.8,z,6,6,4.6,MT.steel);for(const sx of [-1,1])for(let i=0;i<3;i++)bar(x+sx*3.25,PT+3.8,z-1.5+i*1.5,.5,5,.3,MT.dark);
     for(const dx of [-1.8,0,1.8]){P(g,G.cyl(.45,.6,3,8),MT.ceram,x+dx,PT+8.3,z);P(g,G.sph(.6),MT.ceram,x+dx,PT+9.9,z)}};
   switch(type){
+    case 'outpost':{
+      /* Blender model (see /blender/outpost.py): hub on outrigger legs with a turning radar */
+      if(GLB.scene.outpost){const gp=glbInto(g,'outpost',f,0,['dish']);if(gp&&gp.emblem)emblem(g,f,gp.emblem[0],gp.emblem[1]+.3,gp.emblem[2],5);break}
+      P(g,G.cyl(40,40,.6,8),MT.concrete,0,.3,0);P(g,G.cyl(20,18,14,8),W,0,14,0);P(g,G.cyl(20.5,20.5,1.6,8),TB,0,13,0);P(g,G.cyl(15,12,6,8),W,0,23.5,0);
+      {const d=new THREE.Group();d.name='dish';d.position.set(0,38,0);P(d,G.cyl(7,7,1.5,20),MT.steel,0,3,0,.9,0,0);g.add(d);P(g,G.cyl(2.6,3,12,12),MT.gun,0,32,0)}
+      for(let k=0;k<4;k++){const a=Math.PI/4+k*Math.PI/2;P(g,G.cyl(5.5,5.8,1.4,12),MT.gun,Math.cos(a)*30,1,Math.sin(a)*30)}
+      break}
     case 'airfield':{
       /* Blender model (see /blender/airfield.py): arched hangar, control tower with turning radar, two landing pads */
       if(GLB.scene.airfield&&glbInto(g,'airfield',f,0,['dish'])){emblem(g,f,24,12.1,-32,4.4);break}

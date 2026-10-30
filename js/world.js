@@ -26,7 +26,7 @@ function buildOutland(){
   geo.setAttribute('color',new THREE.BufferAttribute(col,3));
   const tex=mkTex(x=>{speck(x,'#cfcfcf',.16,7000);for(let i=0;i<40;i++){const px=Math.random()*256,py=Math.random()*256,r=8+Math.random()*30,g=x.createRadialGradient(px,py,0,px,py,r);
     g.addColorStop(0,`rgba(${Math.random()<.5?'40,36,30':'255,255,240'},.12)`);g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(px-r,py-r,r*2,r*2)}});
-  const dryO=['dunes','canyon','bowl'].includes(M.key)||M.ice,GPo=GPHOTO[M.key]||{};
+  const dryO=!!M.dry||M.ice,GPo=GPHOTO[M.key]||{};
   const ground=new THREE.Mesh(geo,groundify(new THREE.MeshStandardMaterial({map:tex,vertexColors:true,roughness:.96,metalness:0,envMapIntensity:.1}),{raw:0,crack:dryO?1:0,w:(GPo.w||1)*.85,ns:GPo.ns}));
   ground.receiveShadow=true;world.add(ground);
   const pick=(maxD,fall)=>{for(let k=0;k<40;k++){const x=-maxD+vr()*(WW+2*maxD),z=-maxD+vr()*(WH+2*maxD),d=outDist(x,z);if(d<=6||d>maxD)continue;if(vr()<Math.exp(-d/fall)+.12)return [x,z,d]}return null};
@@ -299,7 +299,7 @@ function buildBridges(){
 }
 /* ---------- weather: night lighting, storm particles and lightning ---------- */
 let WXF=1,wxPts=null,wxU=null,wxFlash=0,wxNext=8;const WXB={hemi:.5,sun:1};
-const wxKind=()=>curMap.storm||(curMap.ice?'snow':(curMap.key==='dunes'||curMap.key==='canyon')?'sand':'rain');
+const wxKind=()=>curMap.storm||(curMap.ice?'snow':curMap.dry?'sand':'rain');
 Object.assign(SFX,{thunder:(t,v)=>{const d=dst(.5*(v||1),0,.7);nz(t,.08,'highpass',2200,900,.4,0,d);nz(t,3.2,'lowpass',620,32,1,.5,d);tn(t,2.2,'sine',46,22,.8,d);
   for(let i=0;i<6;i++)nz(t+.2+Math.random()*1.6,.3,'lowpass',380,60,.4,0,d)}});
 function buildWeather(){
@@ -541,6 +541,8 @@ function syncEntities(){
     if(!r){r=modelBld(e);const fy=footY(e);r.g.position.set(e.x,fy,e.y);r.g.add(bldDecal(e,fy));r.g.rotation.y=-(e.rot||0)*Math.PI/2;ents.set(e.id,r);entGroup.add(r.g)}
     const v=e.side===ME||visNow(e);r.g.visible=v;if(!v)continue;
     aoAdd(e.x,footY(e)+.5,e.y,e.w*T*1.22,e.h*T*1.22,0);
+    /* a freshly deployed Forward Base unfolds out of the crawler */
+    if(e.born!=null){const a=Math.min(1,(time-e.born)/1.6),k=a*a*(3-2*a);r.g.scale.set(.55+.45*k,.25+.75*k,.55+.45*k);if(a>=1)e.born=null}
     if(r.turret)r.turret.rotation.y=-e.tang;
     if(r.crane){const busy=sides[e.side]&&sides[e.side].q.b.length&&!sides[e.side].low;r.cph+=fdt*(busy?1.6:.35);r.crane.rotation.y=-.25+Math.sin(r.cph)*(busy?.33:.12)}
     if(r.fans.length&&!(sides[e.side]&&sides[e.side].low))for(const fn of r.fans)fn.rotation.y+=fdt*9;
@@ -773,11 +775,11 @@ function ghostModel(t){
 /* dashed outline of the build zone around each of your yards, shown while placing a structure */
 let zoneG=null,zoneKey='';
 function syncZone(){
-  const ys=yardsOf(ME),key=ys.map(b=>b.id).join(',');
+  const ys=zonesOf(ME),key=ys.map(z=>z.b.id).join(',');
   if(!zoneG||key!==zoneKey||zoneG.parent!==world){if(zoneG&&zoneG.parent)zoneG.parent.remove(zoneG);zoneKey=key;zoneG=new THREE.Group();
     const mat=new THREE.LineDashedMaterial({color:0x8dff9f,dashSize:14,gapSize:9,transparent:true,opacity:.9,depthTest:false,fog:false});
     const fill=new THREE.MeshBasicMaterial({color:0x8dff9f,transparent:true,opacity:.1,depthWrite:false,depthTest:false,fog:false});
-    for(const b of ys){const cx=(b.tx+b.w/2)*T,cy=(b.ty+b.h/2)*T,R=BUILD_R*T,x0=Math.max(T,cx-R),x1=Math.min(WW-T,cx+R),y0=Math.max(T,cy-R),y1=Math.min(WH-T,cy+R),pts=[];
+    for(const z of ys){const cx=z.cx*T,cy=z.cy*T,R=z.R*T,x0=Math.max(T,cx-R),x1=Math.min(WW-T,cx+R),y0=Math.max(T,cy-R),y1=Math.min(WH-T,cy+R),pts=[];
       const edge=(ax,ay,bx,by)=>{const n=Math.ceil(Math.hypot(bx-ax,by-ay)/16);for(let i=0;i<n;i++){const x=ax+(bx-ax)*i/n,y=ay+(by-ay)*i/n;pts.push(new THREE.Vector3(x,hAt(x,y)+2.5,y))}};
       edge(x0,y0,x1,y0);edge(x1,y0,x1,y1);edge(x1,y1,x0,y1);edge(x0,y1,x0,y0);pts.push(pts[0].clone());
       const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat);ln.computeLineDistances();ln.renderOrder=9;zoneG.add(ln);
@@ -907,7 +909,7 @@ function facadeTex(){if(FACADE)return FACADE;
   return FACADE}
 function buildCity(){
   if(GFX==='low')return;
-  const M=curMap,grp=new THREE.Group(),tint=M.ice?0xd8dde2:['dunes','canyon','bowl'].includes(M.key)?0xd2c2a4:0xc4c2b8;
+  const M=curMap,grp=new THREE.Group(),tint=M.ice?0xd8dde2:!!M.dry?0xd2c2a4:0xc4c2b8;
   const fac=fogify(new THREE.MeshStandardMaterial({color:tint,map:facadeTex(),normalMap:TEX.concreteN,normalScale:new THREE.Vector2(.4,.4),roughness:.9,metalness:0,envMapIntensity:.3}));
   const roof=MT.plate,placed=[],N=Math.round(18*MW/64);
   for(let k=0,tries=0;k<N&&tries<600;tries++){

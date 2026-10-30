@@ -112,7 +112,7 @@ function groundify(m,o){o=o||{};
   normal=normalize(cfTx*cfTn.x+cfTz*cfTn.y+normal*max(cfTn.z,.05));
  }`)};return m}
 /* how each map uses the photo ground: raw = how much of the photo's own colour shows through */
-const GPHOTO={valley:{raw:.55},delta:{raw:.55},cross:{raw:.55},dunes:{raw:.5},bowl:{raw:.5},canyon:{raw:.25},frost:{raw:0,w:.5,ns:.7}};
+const GPHOTO={valley:{raw:.55},delta:{raw:.55},cross:{raw:.55},dunes:{raw:.5},bowl:{raw:.5},canyon:{raw:.25},frost:{raw:0,w:.5,ns:.7},oasis:{raw:.5},crater:{raw:.25},lake:{raw:.55},sea:{raw:.5}};
 const mat=(c,o)=>fogify(new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.6,metalness:.25,flatShading:false,envMapIntensity:.6},o||{})));
 /* procedural surface textures (greyscale, tinted by each material's colour) */
 const ANISO=renderer?Math.min(8,renderer.capabilities.getMaxAnisotropy()):1;
@@ -195,8 +195,8 @@ TEX.panelN=nrmMap(TEX.panel,6);TEX.concreteN=nrmMap(TEX.concrete,4);TEX.rockN=nr
 for(const m of TM){m.map=TEX.panel;m.normalMap=TEX.panelN;m.normalScale=new THREE.Vector2(.35,.35)}
 function part(geo,m,x,y,z){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;return o}
 function P(g,geo,m,x,y,z,rx,ry,rz,sx,sy,sz){const o=part(geo,m,x,y,z);if(rx||ry||rz)o.rotation.set(rx||0,ry||0,rz||0);if(sx)o.scale.set(sx,sy||sx,sz||sx);g.add(o);return o}
-const BTOP={shield:44,spike:80,radar:42,yard:50,power:42,refinery:50,barracks:38,factory:42,turret:32,guard:32,missile:26,tech:50,airfield:40};
-const UTOP={gren:22,htank:32,mlrs:28,stank:24,rift:22,tank:28,harv:26,rifle:20,rocket:22,sniper:22,eng:21,buggy:20,arty:30,gunship:14,bomber:12};
+const BTOP={shield:44,spike:80,radar:42,yard:50,power:42,refinery:50,barracks:38,factory:42,turret:32,guard:32,missile:26,tech:50,airfield:40,outpost:44};
+const UTOP={gren:22,htank:32,mlrs:28,stank:24,rift:22,tank:28,harv:26,rifle:20,rocket:22,sniper:22,eng:21,buggy:20,arty:30,gunship:14,bomber:12,mcv:28};
 
 /* merge each group's static parts per material, so a model costs a few draw calls */
 function mergeMeshes(list){

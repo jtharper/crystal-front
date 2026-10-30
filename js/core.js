@@ -6,7 +6,7 @@ const TOUCH=matchMedia('(hover:none) and (pointer:coarse)').matches;
 let DESK=false;const ZMIN=240,zMax=()=>DESK?1350:900,zDef=()=>DESK?760:520;
 if(TOUCH)document.body.classList.add('touch');
 const T=32;
-/* map size is per map (64 or 48 tiles square); set by setMapSize before a world is generated */
+/* map size is per map (112 or 84 tiles square); set by setMapSize before a world is generated */
 let MW=64, MH=64, WW=MW*T, WH=MH*T;
 /* original factions: same stats, different look */
 const FACTIONS=[
@@ -19,7 +19,7 @@ const MAPS=[
    road:'rgba(112,96,70,.85)',edge:'rgba(60,50,35,.5)',blade:[110,125,60],blades:9000,rock:[.40,.36,.31],rockTh:.64,waterTh:.29,forestTh:.70,ruins:5,
    water:0x2c6670,waterOp:.82,ice:false,tree:'broad',tuft:[[.34,.44,.2],[.12,.14,.06]],sky:0x0a0f0d,hemi:[0xcfe0ff,0x3a3a28,.8],sun:[0xfff0d2,.95],fogT:[1,1.02,1.05,.5],
    mm:['#4b4d35','#2a2d2b','#2c5a63','#2b4426','#55544c','#8a7a5c'],swatch:['#5d6b38','#2b4426','#2c6670']},
-  {key:'dunes',short:'Dunes',name:'Ash Dunes',tag:'Open desert, mesas',ga:[168,140,96],gb:[190,164,116],dirt:[140,108,74],moss:[152,130,92],grav:[120,104,86],floor:[124,100,72],mud:[96,82,62],
+  {key:'dunes',dry:1,short:'Dunes',name:'Ash Dunes',tag:'Open desert, mesas',ga:[168,140,96],gb:[190,164,116],dirt:[140,108,74],moss:[152,130,92],grav:[120,104,86],floor:[124,100,72],mud:[96,82,62],
    road:'rgba(88,78,68,.8)',edge:'rgba(60,50,40,.45)',blade:[150,130,80],blades:2600,rock:[.50,.40,.30],rockTh:.62,waterTh:.12,forestTh:.80,ruins:12,
    water:0x3a7f86,waterOp:.85,ice:false,tree:'dead',tuft:[[.55,.47,.3],[.1,.1,.06]],sky:0x14100b,hemi:[0xffe6c4,0x5a4630,.85],sun:[0xffe0b0,1.05],fogT:[1.05,1,.94,.44],
    mm:['#9c8459','#5c4a36','#3a7f86','#6d5a3c','#7d7466','#8a7a5c'],swatch:['#c9a86f','#9c7a4c','#6d5a3c']},
@@ -27,7 +27,7 @@ const MAPS=[
    road:'rgba(120,124,130,.8)',edge:'rgba(80,84,90,.45)',blade:[150,156,160],blades:2200,rock:[.42,.45,.5],rockTh:.66,waterTh:.31,forestTh:.64,ruins:5,
    water:0xbfe6f2,waterOp:.93,ice:true,tree:'pine',tuft:[[.76,.79,.82],[.08,.08,.08]],sky:0x0c1116,hemi:[0xdde8f5,0x56626e,.8],sun:[0xf2f6ff,.85],fogT:[.9,.98,1.1,.3],
    mm:['#b8c0c8','#5d646c','#9fd2e2','#3f5a4c','#7a8088','#8a8478'],swatch:['#e6ecf2','#9fd2e2','#3f5a4c']},
-  {key:'canyon',short:'Canyon',name:'Iron Pass',tag:'Ridges, chokepoints, high ground',ga:[150,98,66],gb:[174,122,84],dirt:[128,84,58],moss:[118,90,62],grav:[112,86,72],floor:[102,72,52],mud:[90,66,50],
+  {key:'canyon',dry:1,short:'Canyon',name:'Iron Pass',tag:'Ridges, chokepoints, high ground',ga:[150,98,66],gb:[174,122,84],dirt:[128,84,58],moss:[118,90,62],grav:[112,86,72],floor:[102,72,52],mud:[90,66,50],
    road:'rgba(82,62,50,.8)',edge:'rgba(50,36,28,.45)',blade:[150,112,72],blades:1600,rock:[.54,.34,.24],ridgeH:16,cliff:[104,60,40],ruins:6,
    water:0x3a6f78,waterOp:.85,ice:false,tree:'dead',tuft:[[.55,.41,.27],[.1,.08,.05]],sky:0x150c08,hemi:[0xffdcc0,0x5a3a28,.85],sun:[0xffd4a8,1.05],fogT:[1.06,.98,.9,.44],
    mm:['#94603f','#4e3426','#3a6f78','#5b4632','#7a6a5e','#8a7a60','#5a3826'],swatch:['#b07a52','#6e4630','#4e3426']},
@@ -35,14 +35,31 @@ const MAPS=[
    road:'rgba(106,94,74,.85)',edge:'rgba(60,50,35,.5)',blade:[92,130,60],blades:9500,rock:[.38,.37,.34],ruins:4,
    water:0x2a5f72,waterOp:.84,ice:false,tree:'broad',tuft:[[.32,.44,.2],[.12,.14,.06]],sky:0x0a0f0d,hemi:[0xd0e4ff,0x34402a,.82],sun:[0xfff2d8,.95],fogT:[.98,1.02,1.06,.5],
    mm:['#47553a','#2a2d2b','#2a5f72','#29422a','#55544c','#9a8a68'],swatch:['#58743f','#2a5f72','#8a7a5c']},
-  {key:'bowl',short:'Bowl',name:'Dust Bowl',tag:'Small duel map',size:60,base:48,players:2,storm:'sand',ga:[176,136,92],gb:[198,160,112],dirt:[140,108,74],moss:[152,130,92],grav:[120,104,86],floor:[124,100,72],mud:[96,82,62],
+  {key:'bowl',dry:1,short:'Bowl',name:'Dust Bowl',tag:'Duel map',size:84,base:48,players:2,storm:'sand',ga:[176,136,92],gb:[198,160,112],dirt:[140,108,74],moss:[152,130,92],grav:[120,104,86],floor:[124,100,72],mud:[96,82,62],
    road:'rgba(88,78,68,.8)',edge:'rgba(60,50,40,.45)',blade:[150,130,80],blades:2600,rock:[.50,.40,.30],rockTh:.62,waterTh:.12,forestTh:.80,ruins:5,
    water:0x3a7f86,waterOp:.85,ice:false,tree:'dead',tuft:[[.55,.47,.3],[.1,.1,.06]],sky:0x14100b,hemi:[0xffe6c4,0x5a4630,.85],sun:[0xffe0b0,1.05],fogT:[1.05,1,.94,.44],
    mm:['#9c8459','#5c4a36','#3a7f86','#6d5a3c','#7d7466','#8a7a5c'],swatch:['#c9a86f','#9c7a4c','#6d5a3c']},
-  {key:'cross',short:'Cross',name:'Crossroads',tag:'Small 3-4 player map',size:60,base:48,ga:[82,90,50],gb:[112,108,66],dirt:[126,106,78],moss:[60,72,40],grav:[104,98,86],floor:[50,56,34],mud:[64,64,52],
+  {key:'cross',short:'Cross',name:'Crossroads',tag:'3-4 player map',size:84,base:48,ga:[82,90,50],gb:[112,108,66],dirt:[126,106,78],moss:[60,72,40],grav:[104,98,86],floor:[50,56,34],mud:[64,64,52],
    road:'rgba(112,96,70,.85)',edge:'rgba(60,50,35,.5)',blade:[110,125,60],blades:5200,rock:[.40,.36,.31],rockTh:.64,waterTh:.29,forestTh:.70,ruins:3,
    water:0x2c6670,waterOp:.82,ice:false,tree:'broad',tuft:[[.34,.44,.2],[.12,.14,.06]],sky:0x0a0f0d,hemi:[0xcfe0ff,0x3a3a28,.8],sun:[0xfff0d2,.95],fogT:[1,1.02,1.05,.5],
    mm:['#4b4d35','#2a2d2b','#2c5a63','#2b4426','#55544c','#8a7a5c'],swatch:['#5d6b38','#2b4426','#2c6670']}
+,
+  {key:'oasis',dry:1,short:'Oasis',name:'Sandstone Oasis',tag:'Raised expansions, central pools',ga:[176,146,100],gb:[198,170,120],dirt:[146,112,76],moss:[120,128,70],grav:[124,106,86],floor:[70,90,48],mud:[90,96,70],
+   road:'rgba(96,84,70,.82)',edge:'rgba(60,50,40,.45)',blade:[140,140,70],blades:3400,rock:[.52,.42,.31],cliff:[132,100,70],ruins:10,
+   water:0x2f8a86,waterOp:.84,ice:false,tree:'broad',tuft:[[.5,.5,.28],[.1,.1,.06]],sky:0x14100b,hemi:[0xffe8c8,0x5a4630,.86],sun:[0xffe2b4,1.05],fogT:[1.05,1,.94,.44],
+   mm:['#a28a5c','#5c4a36','#2f8a86','#4d5f30','#7d7466','#8a7a5c','#6a5034'],swatch:['#cfae74','#4d5f30','#2f8a86']},
+  {key:'crater',dry:1,short:'Crater',name:'Crater Rim',tag:'Central mesa over a chasm',ga:[150,96,64],gb:[176,122,84],dirt:[128,84,58],moss:[118,90,62],grav:[112,86,72],floor:[102,72,52],mud:[40,30,26],
+   road:'rgba(82,62,50,.8)',edge:'rgba(50,36,28,.45)',blade:[150,112,72],blades:1600,rock:[.54,.34,.24],ridgeH:14,cliff:[100,58,40],ruins:7,
+   water:0x1a1412,waterOp:.97,ice:false,tree:'dead',tuft:[[.55,.41,.27],[.1,.08,.05]],sky:0x150c08,hemi:[0xffdcc0,0x5a3a28,.85],sun:[0xffd4a8,1.05],fogT:[1.06,.98,.9,.44],
+   mm:['#94603f','#4e3426','#1c1614','#5b4632','#7a6a5e','#8a7a60','#5a3826'],swatch:['#b07a52','#1c1614','#4e3426']},
+  {key:'lake',short:'Lake',name:'Sapphire Lake',tag:'Island lake, river bridges',ga:[96,104,58],gb:[126,120,74],dirt:[128,108,76],moss:[66,80,44],grav:[106,100,88],floor:[48,58,34],mud:[64,66,52],
+   road:'rgba(116,100,74,.85)',edge:'rgba(60,50,35,.5)',blade:[112,128,62],blades:8000,rock:[.42,.38,.32],ruins:5,
+   water:0x24607a,waterOp:.85,ice:false,tree:'broad',tuft:[[.36,.45,.21],[.12,.14,.06]],sky:0x0a0f0d,hemi:[0xd0e4ff,0x3a3a28,.82],sun:[0xfff0d2,.98],fogT:[1,1.02,1.05,.5],
+   mm:['#5a5c3c','#2a2d2b','#24607a','#2b4426','#55544c','#9a8a68','#4a4030'],swatch:['#6b7a42','#24607a','#2b4426']},
+  {key:'sea',dry:1,short:'Dune Sea',name:'Dune Sea',tag:'Two-player, crystal plazas',players:2,storm:'sand',ga:[168,140,96],gb:[190,164,116],dirt:[140,108,74],moss:[152,130,92],grav:[120,104,86],floor:[124,100,72],mud:[96,82,62],
+   road:'rgba(88,78,68,.8)',edge:'rgba(60,50,40,.45)',blade:[150,130,80],blades:2600,rock:[.50,.40,.30],rockTh:.62,waterTh:.12,forestTh:.80,ruins:12,
+   water:0x3a7f86,waterOp:.85,ice:false,tree:'dead',tuft:[[.55,.47,.3],[.1,.1,.06]],sky:0x14100b,hemi:[0xffe6c4,0x5a4630,.85],sun:[0xffe0b0,1.05],fogT:[1.05,1,.94,.44],
+   mm:['#9c8459','#5c4a36','#3a7f86','#6d5a3c','#7d7466','#8a7a5c','#5c4a36'],swatch:['#c9a86f','#9c7a4c','#6d5a3c']}
 ];
 const WEATHER=[['clear','Clear'],['night','Night'],['storm','Storm']];
 /* player colours are separate from faction style, so 4 players never clash */
@@ -74,7 +91,7 @@ const TCOL=side=>side<0?'#a7aaa2':(typeof sides!=='undefined'&&sides&&sides[side
 const skinOf=side=>(typeof sides!=='undefined'&&sides&&sides[side])?sides[side].fac*16+sides[side].col:(side<0?-16:side*16+COL_ORDER[side%COL_ORDER.length]);
 /* base corners: [flipX, flipY]; bottom-left is always the human player */
 const CORNERS=[[0,0],[1,1],[0,1],[1,0]],basesFor=n=>[[8,n-11],[n-9,10],[8,10],[n-9,n-11]];let BASES=basesFor(64);
-const mapSize=M=>M.size||80,mapPlayers=M=>M.players||4,mapCorners=M=>mapPlayers(M)===2?[0,1]:[0,1,2,3];
+const mapSize=M=>M.size||112,mapPlayers=M=>M.players||4,mapCorners=M=>mapPlayers(M)===2?[0,1]:[0,1,2,3];
 function setMapSize(n){if(n===MW)return;MW=MH=n;WW=WH=n*T;BASES=basesFor(n);if(typeof visResize==='function')visResize()}
 const cornerXY=(c,x,y)=>[CORNERS[c][0]?MW-1-x:x,CORNERS[c][1]?MH-1-y:y];
 const cornerBox=(c,tx,ty,w,h)=>[CORNERS[c][0]?MW-tx-w:tx,CORNERS[c][1]?MH-ty-h:ty];
@@ -95,6 +112,8 @@ const BDEF={
   spike:{name:'Crystal Spike',w:2,h:2,hp:3000,vis:5,power:0,cap:true},
   radar:{name:'Radar Tower',w:2,h:2,hp:3000,vis:16,power:0,cap:true},
   missile:{name:'Missile Tower',w:1,h:1,hp:500,cost:600,time:12,power:-25,vis:9,req:['tech'],range:8.5,dmg:40,rof:2,wt:'rocket',psp:360},
+  /* deployed by an Outpost Crawler; extends where you may build (zone tiles around it) */
+  outpost:{name:'Forward Base',w:3,h:3,hp:1300,cost:1800,vis:9,power:20,zone:8},
   airfield:{name:'Airfield',w:3,h:3,hp:1000,cost:1000,time:16,power:-40,vis:7,req:['factory']}
 };
 /* roles: gunmen beat infantry; rockets beat vehicles and buildings but barely scratch infantry;
@@ -113,6 +132,7 @@ const UDEF={
   buggy:{name:'Raider Buggy',cost:400,time:7,hp:180,speed:128,range:5.5,dmg:8,rof:.35,wt:'bullet',psp:900,vis:8,armor:'veh',r:9,turn:7},
   arty:{name:'Siege Artillery',cost:1000,time:16,hp:240,speed:42,range:11,dmg:80,rof:3.6,wt:'shell',psp:380,vis:7,armor:'veh',r:11,turn:3,req:['tech']},
   harv:{name:'Harvester',cost:600,time:12,hp:320,speed:52,vis:5,armor:'veh',r:10,turn:5,cap:600},
+  mcv:{name:'Outpost Crawler',cost:1800,time:20,hp:700,speed:42,range:0,dmg:0,vis:8,armor:'veh',r:14,turn:2.6,deploy:'outpost'},
   /* aircraft fly over everything. Only rocket weapons (rocket infantry, missile carriers, missile towers) can hit them
      while they are in the air; on the pad they can be hit like a vehicle */
   gunship:{name:'Gunship',cost:1100,time:16,hp:300,speed:118,range:5.5,dmg:13,rof:.36,wt:'chain',psp:1100,vis:8,armor:'air',r:14,turn:3.2,air:true,alt:62},
@@ -127,14 +147,14 @@ const flying=e=>e.k==='u'&&(e.alt||0)>8;
 const armorOf=e=>e.k==='b'?'bld':flying(e)?'air':UDEF[e.type].armor==='air'?'veh':UDEF[e.type].armor;
 const wpnOf=e=>(e.k==='b'?BDEF[e.type]:UDEF[e.type]).wt;
 function canHit(a,t){const w=wpnOf(a);if(!w||!MUL[w])return false;return flying(t)?MUL[w].air>0:true}
-const CAT={power:'b',refinery:'b',barracks:'b',factory:'b',turret:'d',guard:'d',tech:'b',repair:'b',missile:'d',rifle:'i',rocket:'i',sniper:'i',eng:'i',rift:'i',stank:'v',airfield:'b',gunship:'a',bomber:'a',shield:'d',tank:'v',gren:'i',htank:'v',mlrs:'v',harv:'v',buggy:'v',arty:'v'};
-const LISTS={b:['power','refinery','barracks','factory','airfield','tech'],d:['turret','guard','missile','shield'],i:['rifle','rocket','gren','sniper','eng','rift'],v:['tank','htank','mlrs','buggy','arty','stank','harv'],a:['gunship','bomber']};
+const CAT={power:'b',refinery:'b',barracks:'b',factory:'b',turret:'d',guard:'d',tech:'b',repair:'b',missile:'d',rifle:'i',rocket:'i',sniper:'i',eng:'i',rift:'i',stank:'v',airfield:'b',mcv:'v',gunship:'a',bomber:'a',shield:'d',tank:'v',gren:'i',htank:'v',mlrs:'v',harv:'v',buggy:'v',arty:'v'};
+const LISTS={b:['power','refinery','barracks','factory','airfield','tech'],d:['turret','guard','missile','shield'],i:['rifle','rocket','gren','sniper','eng','rift'],v:['tank','htank','mlrs','buggy','arty','stank','mcv','harv'],a:['gunship','bomber']};
 const TITLES={b:'Structures',d:'Defenses',i:'Infantry',v:'Vehicles',a:'Aircraft'};
 const def=t=>BDEF[t]||UDEF[t];
 const UNAMES=[
-  {gren:'Breacher',htank:'Citadel Heavy Tank',mlrs:'Javelin Carrier',shield:'Aegis Shield Generator',rifle:'Trooper',rocket:'Lancer',eng:'Field Engineer',sniper:'Ranger',tank:'Bulwark Tank',buggy:'Pathfinder Rover',arty:'Longbow Artillery',harv:'Crystal Hauler',gunship:'Kestrel Gunship',bomber:'Albatross Bomber',airfield:'Airbase'},
-  {gren:'Bombardier',htank:'Juggernaut Heavy Tank',mlrs:'Hellstorm Launcher',stank:'Phantom Stealth Tank',rifle:'Conscript',rocket:'Breaker',eng:'Saboteur',sniper:'Deadeye',tank:'Ironclad Tank',buggy:'Marauder Buggy',arty:'Hellfire Howitzer',harv:'Reaper Harvester',gunship:'Vulture Gunship',bomber:'Warhammer Bomber',airfield:'Airstrip'},
-  {gren:'Arc Grenadier',htank:'Monolith Heavy Tank',mlrs:'Lance Battery',rift:'Rift Walker',rifle:'Warden',rocket:'Striker',eng:'Technician',sniper:'Spectre',tank:'Viper Tank',buggy:'Hornet Buggy',arty:'Prism Artillery',harv:'Gleaner',gunship:'Dragonfly Gunship',bomber:'Manta Bomber',airfield:'Skyport'}];
+  {gren:'Breacher',htank:'Citadel Heavy Tank',mlrs:'Javelin Carrier',shield:'Aegis Shield Generator',rifle:'Trooper',rocket:'Lancer',eng:'Field Engineer',sniper:'Ranger',tank:'Bulwark Tank',buggy:'Pathfinder Rover',arty:'Longbow Artillery',harv:'Crystal Hauler',gunship:'Kestrel Gunship',bomber:'Albatross Bomber',airfield:'Airbase',mcv:'Frontier Crawler',outpost:'Frontier Post'},
+  {gren:'Bombardier',htank:'Juggernaut Heavy Tank',mlrs:'Hellstorm Launcher',stank:'Phantom Stealth Tank',rifle:'Conscript',rocket:'Breaker',eng:'Saboteur',sniper:'Deadeye',tank:'Ironclad Tank',buggy:'Marauder Buggy',arty:'Hellfire Howitzer',harv:'Reaper Harvester',gunship:'Vulture Gunship',bomber:'Warhammer Bomber',airfield:'Airstrip',mcv:'Bastion Rig',outpost:'Iron Bastion'},
+  {gren:'Arc Grenadier',htank:'Monolith Heavy Tank',mlrs:'Lance Battery',rift:'Rift Walker',rifle:'Warden',rocket:'Striker',eng:'Technician',sniper:'Spectre',tank:'Viper Tank',buggy:'Hornet Buggy',arty:'Prism Artillery',harv:'Gleaner',gunship:'Dragonfly Gunship',bomber:'Manta Bomber',airfield:'Skyport',mcv:'Seed Crawler',outpost:'Outpost Node'}];
 const nm=(t,side)=>{const fc=(typeof sides!=='undefined'&&sides&&sides[side||0])?sides[side||0].fac:pickFac;return (UNAMES[fc]&&UNAMES[fc][t])||def(t).name};
 const RD=c=>c==='d'?'readyD':'ready',isStruct=c=>c==='b'||c==='d',isUnitCat=c=>c==='i'||c==='v'||c==='a';
 /* the building that trains each unit category */

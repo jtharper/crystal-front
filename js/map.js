@@ -6,16 +6,19 @@ const LAYOUTS={
   valley:{feat:[
     {k:'line',once:1,t:2,w:3.4,gaps:[[.17,.05],[.5,.06],[.83,.05]],pts:[[32,0],[30,9],[33.5,18],[30.5,26],[32,32],[33.5,38],[30.5,46],[33,55],[32,64]]},
     {k:'blob',t:3,x:18,y:41,r:3.6},{k:'blob',t:3,x:25,y:58,r:2.6},{k:'blob',t:3,x:3,y:37,r:3},{k:'blob',t:3,x:13,y:61.5,r:2},
-    {k:'blob',t:1,x:23,y:47,r:1.9},{k:'blob',t:1,x:12,y:33,r:1.7},{k:'line',t:1,w:1.6,pts:[[26,36],[27.5,40]]}],
-   fields:[[16,52,3.2],[8,42,2.8],[24,32,2.6]]},
+    {k:'blob',t:1,x:23,y:47,r:1.9},{k:'blob',t:1,x:12,y:33,r:1.7},{k:'line',t:1,w:1.6,pts:[[26,36],[27.5,40]]},
+    {k:'hill',x:24,y:42,r:2.6,h:20},{k:'ring',t:6,x:24,y:42,r:2.7,w:1.4,gaps:[[.25,.06],[.75,.06]]}],
+   fields:[[16,52,3.2],[8,42,2.8],[24,32,2.6],[26.5,48,1.8]],plat:1},
   dunes:{feat:[
     {k:'blob',t:1,x:20,y:44,r:3.4},{k:'blob',t:1,x:27,y:55,r:2.1},{k:'blob',t:1,x:12,y:33,r:2.5},{k:'blob',t:1,once:1,x:31.5,y:31.5,r:3.6},
-    {k:'blob',t:2,x:31.5,y:49,r:2.2},{k:'blob',t:3,x:28.3,y:46.6,r:1.1},{k:'blob',t:3,x:5,y:30,r:1.7},{k:'blob',t:3,x:21,y:61,r:1.3}],
-   fields:[[16,52,3.2],[9,42,2.8],[25,38,2.6],[31.5,25,2.2]]},
+    {k:'blob',t:2,x:31.5,y:49,r:2.2},{k:'blob',t:3,x:28.3,y:46.6,r:1.1},{k:'blob',t:3,x:5,y:30,r:1.7},{k:'blob',t:3,x:21,y:61,r:1.3},
+    {k:'hill',x:25,y:47,r:2.4,h:18},{k:'ring',t:6,x:25,y:47,r:2.5,w:1.4,gaps:[[.1,.07],[.6,.07]]}],
+   fields:[[16,52,3.2],[9,42,2.8],[25,38,2.6],[31.5,25,2.2],[25,47,1.5]],plat:1},
   frost:{feat:[
     {k:'blob',t:2,once:1,x:31.5,y:31.5,r:7.2},{k:'blob',t:3,x:3.5,y:31.5,r:3.6},{k:'blob',t:3,x:31.5,y:60.5,r:3.3},{k:'blob',t:3,x:20,y:47,r:2.5},
-    {k:'line',t:1,w:2,pts:[[13,38],[19,33.5]]},{k:'blob',t:2,x:25,y:56,r:1.5},{k:'blob',t:1,x:27,y:44,r:1.5}],
-   fields:[[16,52,3.2],[9,42,2.8],[22,31.5,2.4],[31.5,22,2.4]]},
+    {k:'line',t:1,w:2,pts:[[13,38],[19,33.5]]},{k:'blob',t:2,x:25,y:56,r:1.5},{k:'blob',t:1,x:27,y:44,r:1.5},
+    {k:'hill',x:22,y:40,r:2.3,h:18},{k:'ring',t:6,x:22,y:40,r:2.4,w:1.4,gaps:[[.0,.07],[.5,.07]]}],
+   fields:[[16,52,3.2],[9,42,2.8],[22,31.5,2.4],[31.5,22,2.4],[26,50,1.8]],plat:1},
   /* walled quarters with narrow gaps, a raised overlook in each quarter, a central mesa with four ramps */
   canyon:{feat:[
     {k:'line',t:1,w:3.2,pts:[[31.5,64],[31.5,41]],gaps:[[.5,.085]]},
@@ -31,28 +34,65 @@ const LAYOUTS={
     {k:'bridge',x:32,y:50,dir:0,len:9,w:2.3},{k:'bridge',x:32,y:38.5,dir:0,len:8.5,w:1.7},
     {k:'bridge',x:13,y:32,dir:1,len:9,w:2.3},{k:'bridge',x:25.5,y:32,dir:1,len:8.5,w:1.7},
     {k:'blob',t:2,x:18.5,y:45.5,r:1.7},{k:'blob',t:3,x:3.5,y:40,r:2.8},{k:'blob',t:3,x:23.5,y:60.5,r:2.2},{k:'blob',t:3,x:27.5,y:42.5,r:1.4},
-    {k:'blob',t:1,x:12,y:36,r:1.4},{k:'blob',t:1,x:26.5,y:55,r:1.3}],
-   fields:[[15,53,3.1],[7,40,2.6],[22,38,2.3],[24,46.5,2.1]],spike:[14,40],radars:[[23,23]],road:[[8.5,56],[14,48],[21,41],[25.5,36],[25.5,28.5]]},
+    {k:'blob',t:1,x:12,y:36,r:1.4},{k:'blob',t:1,x:26.5,y:55,r:1.3},
+    {k:'hill',x:21,y:39,r:2.1,h:16},{k:'ring',t:6,x:21,y:39,r:2.2,w:1.4,gaps:[[.25,.07],[.75,.07]]}],
+   fields:[[15,53,3.1],[7,40,2.6],[22,38,2.3],[24,46.5,2.1]],plat:1,spike:[14,40],radars:[[23,23]],road:[[8.5,56],[14,48],[21,41],[25.5,36],[25.5,28.5]]},
   /* 48x48 duel: two bases on the diagonal, radar outposts in the empty corners, mesas around a central rock */
   bowl:{feat:[
     {k:'blob',t:1,once:1,x:24,y:24,r:2.6},{k:'line',t:1,w:1.8,pts:[[12,26],[15,28.5]]},
     {k:'blob',t:3,x:3,y:45,r:1.5},{k:'blob',t:3,x:22.5,y:44.5,r:1.6},{k:'blob',t:2,x:23,y:38,r:1.4}],
-   fields:[[15,38,2.8],[5,27,2.2],[18.5,24.5,1.9]],spike:[18,32],radars:[[7,9]],road:[[8.5,40],[12,33],[18,28.5],[24,24]]},
+   fields:[[15,38,2.8],[5,27,2.2],[18.5,24.5,1.9]],plat:1,spike:[18,32],radars:[[7,9]],road:[[8.5,40],[12,33],[18,28.5],[24,24]]},
   /* 48x48 for three or four players: a raised centre overlook with four ramps, forests between the bases */
   cross:{feat:[
     {k:'hill',once:1,x:24,y:24,r:3.4,h:28},{k:'ring',once:1,t:6,x:24,y:24,r:3.55,w:1.4,gaps:[[.125,.06],[.375,.06],[.625,.06],[.875,.06]]},
     {k:'blob',t:3,x:2.5,y:27,r:1.8},{k:'blob',t:3,x:20,y:45,r:1.7},{k:'line',t:1,w:1.7,pts:[[12,27],[14.5,29.5]]},{k:'blob',t:1,x:23,y:40,r:1.3}],
-   fields:[[15,38,2.8],[6,27.5,2],[17,29,1.7]],spike:[18,32],radars:[[23,23]],radarOnce:1,road:[[8.5,40],[12,34],[17,30],[24,24]]}
+   fields:[[15,38,2.8],[6,27.5,2],[17,29,1.7]],plat:1,spike:[18,32],radars:[[23,23]],radarOnce:1,road:[[8.5,40],[12,34],[17,30],[24,24]]},
+  /* desert crossroads: four pools round a raised centre, crescent ridges, crystal on raised dirt pads (good forward-base spots) */
+  oasis:{feat:[
+    {k:'blob',t:2,x:28.2,y:35.8,r:2.2},{k:'blob',t:3,x:26.2,y:38.4,r:1.1},
+    {k:'hill',once:1,x:32,y:32,r:2.8,h:16},{k:'ring',once:1,t:6,x:32,y:32,r:2.9,w:1.4,gaps:[[.125,.06],[.375,.06],[.625,.06],[.875,.06]]},
+    {k:'line',t:1,w:2,pts:[[12.5,38.5],[15.5,36],[20,35.2]]},{k:'line',t:1,w:2,pts:[[24.5,49],[23.6,53],[24.6,57.5]]},
+    {k:'hill',x:20,y:42,r:2.6,h:14},{k:'ring',t:6,x:20,y:42,r:2.7,w:1.4,gaps:[[.15,.07],[.65,.07]]},
+    {k:'hill',x:27.5,y:52,r:2.3,h:12},{k:'ring',t:6,x:27.5,y:52,r:2.4,w:1.4,gaps:[[.4,.07],[.9,.07]]},
+    {k:'blob',t:3,x:2.5,y:36,r:2.2},{k:'blob',t:3,x:14,y:61.5,r:1.6},{k:'blob',t:1,x:13,y:47,r:1.2}],
+   fields:[[16,52,3.2],[8,42,2.8],[20,42,1.7],[27.5,52,1.5],[30,40.5,1.5]],plat:1,spike:[22,35],radars:[[31,31]],radarOnce:1},
+  /* a high central mesa ringed by a bottomless chasm, crossed by four bridges; walled quarters with gaps */
+  crater:{feat:[
+    {k:'hill',once:1,x:32,y:32,r:4.6,h:40},{k:'ring',once:1,t:6,x:32,y:32,r:4.75,w:1.5,gaps:[[0,.05],[.25,.05],[.5,.05],[.75,.05]]},
+    {k:'ring',once:1,t:2,x:32,y:32,r:8.4,w:5},
+    {k:'bridge',x:32,y:37.4,dir:1,len:8,w:2.4},{k:'bridge',x:26.6,y:32,dir:0,len:8,w:2.4},
+    {k:'line',t:1,w:2.6,pts:[[31.5,64],[31.5,49]],gaps:[[.55,.16]]},{k:'line',t:1,w:2.6,pts:[[-1,31.5],[15,31.5]],gaps:[[.45,.16]]},
+    {k:'line',t:1,w:2.2,pts:[[23,43],[18,48]]},{k:'blob',t:1,x:12,y:36,r:1.5},{k:'blob',t:3,x:4,y:60,r:1.5}],
+   fields:[[15,53,3.1],[7,40,2.6],[21,38,2.2],[27,47,2],[32,32,1.6]],plat:1,spike:[22,46],radars:[[31,24]],road:[[8.5,56],[14,48],[21,43],[26.6,37.4],[32,32]]},
+  /* a big lake with a bridged island in the middle; rivers to the map edges split the four bases */
+  lake:{feat:[
+    {k:'blob',t:2,once:1,x:32,y:32,r:8.6},{k:'blob',t:0,once:1,x:32,y:32,r:3.4},
+    {k:'bridge',x:32,y:36,dir:1,len:13,w:2.2},
+    {k:'line',t:2,w:3.6,pts:[[32,38],[33,46],[31,55],[32,65]]},{k:'line',t:2,w:3.6,pts:[[26,32],[18,31],[9,33],[-1,32]]},
+    {k:'bridge',x:32,y:53,dir:0,len:8,w:2.3},{k:'bridge',x:13,y:32,dir:1,len:8,w:2.3},
+    {k:'blob',t:3,x:3.5,y:40,r:2.4},{k:'blob',t:3,x:24,y:60.5,r:2},{k:'blob',t:3,x:26,y:40,r:1.3},{k:'blob',t:1,x:13,y:37,r:1.3},{k:'blob',t:1,x:27,y:56,r:1.2},
+    {k:'hill',x:22,y:44,r:2.3,h:16},{k:'ring',t:6,x:22,y:44,r:2.4,w:1.4,gaps:[[.3,.07],[.8,.07]]}],
+   fields:[[15,53,3.1],[7,41,2.6],[21,38,2.2],[26.5,49,2],[32,32,1.5]],plat:1,spike:[22,44],radars:[[31,31]],radarOnce:1,road:[[8.5,56],[14,48],[21,41],[27,37],[32,34]]},
+  /* two-player desert: lakes on the flanks, raised crystal plazas, a broken rock spine through the middle */
+  sea:{feat:[
+    {k:'blob',t:2,x:5,y:31.5,r:4.2},{k:'blob',t:3,x:9.5,y:35.5,r:1.2},
+    {k:'hill',x:23,y:43,r:3.4,h:12},{k:'ring',t:6,x:23,y:43,r:3.5,w:1.4,gaps:[[.05,.07],[.55,.07],[.8,.06]]},
+    {k:'line',once:1,t:1,w:2.2,pts:[[25,32],[39,32]],gaps:[[.5,.2]]},
+    {k:'line',t:1,w:2,pts:[[10,41],[14,37.5],[19,36.5]]},{k:'line',t:1,w:1.8,pts:[[28,54],[27,58]]},
+    {k:'blob',t:1,x:30,y:47,r:1.3},{k:'blob',t:3,x:21,y:61.5,r:1.4}],
+   fields:[[16,52,3.2],[8,42,2.8],[23,43,2.2],[30.5,52,1.7],[31.5,38,1.5]],plat:1,spike:[17,35],radars:[[31,31]],radarOnce:1}
 };
 /* maps were laid out on a 64-tile grid (48 for the small ones). On today's bigger maps everything within K0 tiles of an edge
    keeps its place (bases, their home crystal fields, the start yard) and the middle stretches, so the battlefield between
    the bases grows while every base keeps the spacing it was balanced for. */
-let curLayout=null;
+let curLayout=null,FIELDS=[];
 function layoutOf(M){
   const B=M.base||64,K0=B>=64?20:16,H=B/2,k=(MW/2-K0)/(H-K0);
   const c=v=>{const d=Math.min(v,B-v),dn=d<=K0?d:K0+(d-K0)*k;return v<=H?dn:MW-dn};
   const rs=(x,y)=>Math.min(x,B-x,y,B-y)>K0?1+(k-1)*.45:1,P=([x,y])=>[c(x),c(y)],box2=([x,y])=>[Math.round(c(x+1)-1),Math.round(c(y+1)-1)];
-  const L=LAYOUTS[M.key],feat=L.feat.map(F=>{const G=Object.assign({},F);
+  /* every base sits on a raised plateau; ramps lead down toward the middle (north, north-east and east for the bottom-left base) */
+  const L0=LAYOUTS[M.key],pr=B>=64?12:11,L=L0.plat?Object.assign({},L0,{feat:[...L0.feat,{k:'hill',x:8.5,y:B-11,r:pr,h:28,base:1},
+    {k:'ring',t:6,x:8.5,y:B-11,r:pr+.15,w:1.6,gaps:[[.04,.04],[.875,.045],[.71,.04]]}]}):L0,feat=L.feat.map(F=>{const G=Object.assign({},F);
     if('x' in F){G.x=c(F.x);G.y=c(F.y);if(F.r&&F.k!=='bridge')G.r=F.r*rs(F.x,F.y)}
     if(F.pts)G.pts=F.pts.map(P);return G});
   return {feat,fields:L.fields.map(([x,y,r])=>[c(x),c(y),r*rs(x,y)]),spike:L.spike&&box2(L.spike),radars:L.radars&&L.radars.map(box2),radarOnce:L.radarOnce,
@@ -85,7 +125,7 @@ function genMap(noPaint){
     }
   }
   /* filler for the stretched middle: mirrored copses and rock outcrops, kept off roads, fields, bases, hills and bridges */
-  {const B=M.base||64,K0=B>=64?20:16,dry=['dunes','canyon','bowl'].includes(M.key),N=Math.round((B>=64?7:3)*(MW/B-1)/.25);
+  {const B=M.base||64,K0=B>=64?20:16,dry=!!M.dry,N=Math.round((B>=64?7:3)*(MW/B-1)/.25);
    const rd=L.road,segD=(x,y)=>{let m=1e9;for(let i=1;i<rd.length;i++){const [ax,ay]=rd[i-1],[bx,by]=rd[i],dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));m=Math.min(m,Math.hypot(x-ax-dx*t,y-ay-dy*t))}return m};
    const busy=(x,y,r)=>BASES.some(b=>Math.hypot(x-b[0],y-b[1])<13+r)||L.fields.some(f=>Math.hypot(x-f[0],y-f[1])<f[2]+3+r)||HILLS.some(h=>Math.hypot(x-h[0],y-h[1])<h[2]+2+r)||
      pendB.some(p=>Math.hypot(x-p.mx,y-p.my)<6+r)||segD(x,y)<2.6+r||Math.hypot(x-MW/2,y-MH/2)<5+r||openNot(x,y,r+2.5);
@@ -97,6 +137,7 @@ function genMap(noPaint){
   for(let i=0;i<MW*MH;i++){const x=i%MW,y=(i/MW)|0;if(!ter[i]&&rng()<.0035){set(x,y,1)}}
   const fields=[];
   for(const [x,y,r] of L.fields)for(let c=0;c<4;c++){const [a,b]=cornerXY(c,x,y);if(!fields.some(f=>Math.hypot(f[0]-a,f[1]-b)<1))fields.push([a,b,r])}
+  FIELDS=fields;
   const clear=[...BASES.map(b=>[b[0],b[1],10]),...fields.map(f=>[f[0],f[1],f[2]+1.8]),...HILLS.map(h=>[h[0]-.5,h[1]-.5,h[2]-1.1])];
   const inZone=(x,y,pad)=>clear.some(c=>Math.hypot(x-c[0],y-c[1])<c[2]+pad);
   for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++)if(inZone(x,y,0))set(x,y,0);
@@ -135,7 +176,7 @@ function renderTerrain(){
   const small=document.createElement('canvas');small.width=small.height=R;
   const sx=small.getContext('2d'),img=sx.createImageData(R,R),D=img.data;
   /* photo-ground mask: r = how much of the scanned ground texture shows, g = cracked mud vs leafy mud */
-  groundMask=document.createElement('canvas');groundMask.width=groundMask.height=R;const mg=groundMask.getContext('2d'),mimg=mg.createImageData(R,R),MD=mimg.data,DRY=['dunes','canyon','bowl'].includes(curMap.key);
+  groundMask=document.createElement('canvas');groundMask.width=groundMask.height=R;const mg=groundMask.getContext('2d'),mimg=mg.createImageData(R,R),MD=mimg.data,DRY=!!curMap.dry;
   const M=curMap,GA=M.ga,GB=M.gb,DIRT=M.dirt,MOSS=M.moss,GRAV=M.grav,CRY=[84,64,86],CLF=M.cliff||GRAV.map(c=>c*.72);
   for(let py=0;py<R;py++)for(let px=0;px<R;px++){
     const u=px*k/T,v=py*k/T;
@@ -176,7 +217,7 @@ function renderTerrain(){
     for(let j=0;j<6;j++){a+=(rng()-.5)*1.1;x+=Math.cos(a)*(8+rng()*14);y+=Math.sin(a)*(8+rng()*14);g.lineTo(x,y)}g.stroke();
   }
   /* ---- ground detail: cracked earth, paved base plazas, roads, tyre tracks, scorch marks ---- */
-  const dry=['dunes','canyon','bowl'].includes(M.key),paved=!dry&&!M.ice,openAt=(x,y)=>!tileAt(ter,x/T,y/T)&&!(tileAt(cry,x/T,y/T)>0);
+  const dry=!!M.dry,paved=!dry&&!M.ice,openAt=(x,y)=>!tileAt(ter,x/T,y/T)&&!(tileAt(cry,x/T,y/T)>0);
   const nearBase=(x,y,r)=>BASES.some(([bx,by])=>Math.hypot(x/T-bx,y/T-by)<r);
   /* cracked, dried earth */
   for(let n=0,tries=0;n<(dry?38:16)*AR&&tries<600;tries++){const cx=rng()*WW,cy=rng()*WH;if(!openAt(cx,cy)||nearBase(cx,cy,9))continue;n++;
@@ -225,7 +266,7 @@ function renderTerrain(){
     g.strokeStyle='rgba(10,8,6,.18)';g.lineWidth=2;for(let k=0;k<9;k++){const a=rng()*6.283,l=r*(1.2+rng()*1.3);g.beginPath();g.moveTo(x+Math.cos(a)*r*.4,y+Math.sin(a)*r*.4);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}}
   mmTerrain=document.createElement('canvas');mmTerrain.width=MW;mmTerrain.height=MH;
   const m=mmTerrain.getContext('2d');
-  for(let i=0;i<MW*MH;i++){m.fillStyle=M.mm[ter[i]]||M.mm[0];m.fillRect(i%MW,(i/MW)|0,1,1)}
+  for(let i=0;i<MW*MH;i++){m.fillStyle=M.mm[ter[i]]||(ter[i]===6?M.mm[1]:M.mm[0]);m.fillRect(i%MW,(i/MW)|0,1,1)}
 }
 /* top-down preview for the setup screen: the layout regenerated with a fixed seed, hill-shaded */
 function mapPreview(mi,noBases){
