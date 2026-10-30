@@ -290,11 +290,13 @@ for(const t in btn){const b=btn[t];let lp=0,shown=false;
 }
 /* the battlefield: only your own Command Yard shows a hover card (everything else has one in the build menu) */
 let hovT=0,hovE=null;
-cvs.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||state!=='play'||drag)return;const now=performance.now();if(now-hovT<90)return;hovT=now;
+cvs.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||state!=='play'||drag)return;
+  /* cursor lock: the browser still reports the hidden system cursor here; only the drawn cursor's moves count */
+  if(typeof PL!=='undefined'&&PL.on&&e.isTrusted)return;const now=performance.now();if(now-hovT<90)return;hovT=now;
   const r=cvs.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,hit=pickScreen(x,y,o=>!o.dead&&o.type==='yard'&&o.side===ME);
   if(hit){hovE=hit;clearTimeout(hovE._t);showInfo(hit.type,hit.side,x,y)}else{hovE=null;hideInfo()}});
-cvs.addEventListener('pointerleave',()=>{hovE=null;hideInfo()});
-cvs.addEventListener('pointerdown',()=>hideInfo());
+cvs.addEventListener('pointerleave',e=>{if(typeof PL!=='undefined'&&PL.on&&e.isTrusted)return;hovE=null;hideInfo()});
+cvs.addEventListener('pointerdown',e=>{if(typeof PL!=='undefined'&&PL.on&&e.isTrusted)return;hideInfo()});
 /* touch: tap the portrait in the selection panel */
 $('#selBar').addEventListener('click',e=>{const p=e.target.closest('.sbPort');if(!p)return;const one=sel.filter(o=>!o.dead)[0];if(!one)return;
   if(!icEl.hidden){hideInfo();return}const r=p.getBoundingClientRect(),hr=$('#hud').getBoundingClientRect();showInfo(one.type,one.side,r.left+r.width/2-hr.left,r.top-hr.top,'above');e.stopPropagation()});

@@ -777,16 +777,23 @@ let zoneG=null,zoneKey='';
 function syncZone(){
   const ys=zonesOf(ME),key=ys.map(z=>z.b.id).join(',');
   if(!zoneG||key!==zoneKey||zoneG.parent!==world){if(zoneG&&zoneG.parent)zoneG.parent.remove(zoneG);zoneKey=key;zoneG=new THREE.Group();
-    const mat=new THREE.LineDashedMaterial({color:0x8dff9f,dashSize:14,gapSize:9,transparent:true,opacity:.9,depthTest:false,fog:false});
-    const fill=new THREE.MeshBasicMaterial({color:0x8dff9f,transparent:true,opacity:.1,depthWrite:false,depthTest:false,fog:false});
-    for(const z of ys){const cx=z.cx*T,cy=z.cy*T,R=z.R*T,x0=Math.max(T,cx-R),x1=Math.min(WW-T,cx+R),y0=Math.max(T,cy-R),y1=Math.min(WH-T,cy+R),pts=[];
-      const edge=(ax,ay,bx,by)=>{const n=Math.ceil(Math.hypot(bx-ax,by-ay)/16);for(let i=0;i<n;i++){const x=ax+(bx-ax)*i/n,y=ay+(by-ay)*i/n;pts.push(new THREE.Vector3(x,hAt(x,y)+2.5,y))}};
-      edge(x0,y0,x1,y0);edge(x1,y0,x1,y1);edge(x1,y1,x0,y1);edge(x0,y1,x0,y0);pts.push(pts[0].clone());
-      const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat);ln.computeLineDistances();ln.renderOrder=9;zoneG.add(ln);
+    const mat=new THREE.MeshBasicMaterial({color:0x8dff9f,transparent:true,opacity:.9,depthWrite:false,depthTest:false,fog:false,side:THREE.DoubleSide});
+    const fill=new THREE.MeshBasicMaterial({color:0x8dff9f,transparent:true,opacity:.16,depthWrite:false,depthTest:false,fog:false});
+    zoneG.userData.mats=[mat,fill];
+    for(const z of ys){const cx=z.cx*T,cy=z.cy*T,R=z.R*T,x0=Math.max(T,cx-R),x1=Math.min(WW-T,cx+R),y0=Math.max(T,cy-R),y1=Math.min(WH-T,cy+R);
+      /* bold dashed border: flat ribbons laid on the ground (WebGL lines are only one pixel wide) */
+      const P=[],HW=3.2,DASH=26,GAP=14;
+      const edge=(ax,ay,bx,by)=>{const L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L,nx=-uy*HW,ny=ux*HW;
+        for(let d=0;d<L;d+=DASH+GAP){const e=Math.min(L,d+DASH);for(let a=d;a<e;a+=8){const b2=Math.min(e,a+8),px=ax+ux*a,py=ay+uy*a,qx=ax+ux*b2,qy=ay+uy*b2,h1=hAt(px,py)+3,h2=hAt(qx,qy)+3;
+          P.push(px-nx,h1,py-ny, px+nx,h1,py+ny, qx+nx,h2,qy+ny, px-nx,h1,py-ny, qx+nx,h2,qy+ny, qx-nx,h2,qy-ny)}}};
+      edge(x0,y0,x1,y0);edge(x1,y0,x1,y1);edge(x1,y1,x0,y1);edge(x0,y1,x0,y0);
+      const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));const ln=new THREE.Mesh(bg,mat);ln.renderOrder=9;zoneG.add(ln);
       const pg=new THREE.PlaneGeometry(x1-x0,y1-y0,Math.ceil((x1-x0)/T),Math.ceil((y1-y0)/T));pg.rotateX(-Math.PI/2);pg.translate((x0+x1)/2,0,(y0+y1)/2);
       const pp=pg.attributes.position;for(let i=0;i<pp.count;i++)pp.setY(i,hAt(pp.getX(i),pp.getZ(i))+1.5);const fm=new THREE.Mesh(pg,fill);fm.renderOrder=8;zoneG.add(fm)}
     world.add(zoneG)}
-  zoneG.visible=!!place;
+  /* shown while placing a structure, and while your Command Yard or a Forward Base is selected */
+  zoneG.visible=!!place||sel.some(e=>e.k==='b'&&e.side===ME&&!e.dead&&(e.type==='yard'||e.type==='outpost'));
+  if(zoneG.visible&&zoneG.userData.mats){const pv=.5+.5*Math.sin(performance.now()/420);zoneG.userData.mats[0].opacity=.7+.25*pv;zoneG.userData.mats[1].opacity=.12+.07*pv}
 }
 function syncGhost(){
   syncZone();
