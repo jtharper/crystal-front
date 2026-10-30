@@ -105,7 +105,7 @@ const ROLE={gren:['Heavy trooper, area damage','Infantry · Buildings','Tanks'],
   tank:['Fast, cheap light tank','Tanks · Buildings','Infantry'],harv:['Crystal harvester','',''],yard:['Command center','',''],
   power:['Generates 100 power','',''],refinery:['Turns crystal into credits','',''],barracks:['Trains infantry','',''],
   factory:['Builds and repairs vehicles','',''],turret:['Base defense','Vehicles',''],
-  airfield:['Builds, re-arms and repairs aircraft','',''],gunship:['Hovering chain-gun gunship','Infantry · Light vehicles','Rocket troops · Missiles'],bomber:['Two-bomb strike jet','Buildings · Tanks','Rocket troops · Missiles']};
+  airfield:['Builds, re-arms and repairs aircraft','',''],mcv:['Deploys into a Forward Base','',''],outpost:['Forward build zone','',''],gunship:['Hovering chain-gun gunship','Infantry · Light vehicles','Rocket troops · Missiles'],bomber:['Two-bomb strike jet','Buildings · Tanks','Rocket troops · Missiles']};
 let selKey='',selRefs=[];
 let selBarOn=false,selBarOff='';
 function updSel(){
@@ -140,12 +140,13 @@ function buildSelBar(us){
   const sp=$('#selBar');selRefs=[];sp.classList.remove('sbTiles');sp.style.width='';
   const desel=`<button type="button" class="sbX" aria-label="Deselect">&#10005;</button>`;
   if(us.length===1){
-    const e=us[0],ro=ROLE[e.type]||[''],hint=e.type==='eng'?'Tap an enemy or map building to capture it':e.type==='harv'?'Tap crystals to harvest there':'Tap ground to move · enemy to attack';
+    const e=us[0],ro=ROLE[e.type]||[''],hint=UDEF[e.type].deploy?'Drive to open ground, then deploy (D) to build a Forward Base':e.type==='eng'?'Tap an enemy or map building to capture it':e.type==='harv'?'Tap crystals to harvest there':'Tap ground to move · enemy to attack';
     sp.innerHTML=`<div class="sbOne"><div class="sbPort"><img alt="" src="${thumb(e.type,skinOf(e.side),220)}"></div>
       <div class="sbInfo"><div class="sbName">${nm(e.type,e.side)}</div><div class="sbRole">${ro[0]}</div>
       <div class="sbRow"><span class="lbl">Health</span><span class="sbV ht"></span></div><div class="hp hpm"><i></i></div>`+
       (e.type==='harv'?`<div class="sbRow"><span class="lbl">Cargo</span><span class="sbV ct"></span></div><div class="hp cargo"><i></i></div>`:'')+
-      `<div class="sbHint">${hint}</div></div></div>`+desel;
+      `<div class="sbHint">${hint}</div>`+(UDEF[e.type].deploy&&e.side===ME?`<div class="sbBtns"><button type="button" class="scBtn sbDep">Deploy</button></div>`:'')+`</div></div>`+desel;
+    {const db=sp.querySelector('.sbDep');if(db)db.addEventListener('click',()=>{deploySel();sfx('click')})}
     selRefs.push({e,bar:sp.querySelector('.hpm i'),txt:sp.querySelector('.ht'),cargo:e.type==='harv'?sp.querySelector('.hp.cargo i'):null,ctxt:sp.querySelector('.ct')});
   }else if(DESK){
     /* desktop: one entry per selected unit, never a scrollbar. A few units get full rows (picture, name, health);
@@ -244,6 +245,8 @@ const DESC={
   turret:'Cannon emplacement. Strong against vehicles.',
   guard:'Machine-gun tower. Strong against infantry.',
   missile:'Missile launcher tower. Hits vehicles hard from long range and shoots down aircraft.',
+  mcv:'Slow, unarmed crawler carrying a folded base. Drive it anywhere and deploy it to open a new build zone for expansions, forward defenses and remote refineries.',
+  outpost:'Forward Base unfolded by an Outpost Crawler. You can place structures around it, just like around your Command Yard. Adds 20 power.',
   airfield:'Builds aircraft. Bombers land on its two pads to re-arm and repair, so each Airfield supports two bombers.',
   gunship:'Hovering gunship with a rotary chain gun. Flies over anything and shreds infantry. Only rocket weapons can hit it.',
   bomber:'Strike jet. Order it onto a target: it drops two heavy bombs, flies home to re-arm, then goes back. Only rocket weapons can hit it in the air.',
@@ -285,10 +288,10 @@ for(const t in btn){const b=btn[t];let lp=0,shown=false;
   b.addEventListener('click',e=>{if(shown){shown=false;e.stopImmediatePropagation();e.preventDefault()}},true);
   b.addEventListener('contextmenu',e=>{if(e.pointerType!=='mouse')e.preventDefault()});
 }
-/* the battlefield: only the Command Yard shows a hover card (everything else has one in the build menu) */
+/* the battlefield: only your own Command Yard shows a hover card (everything else has one in the build menu) */
 let hovT=0,hovE=null;
 cvs.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||state!=='play'||drag)return;const now=performance.now();if(now-hovT<90)return;hovT=now;
-  const r=cvs.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,hit=pickScreen(x,y,o=>!o.dead&&o.type==='yard'&&seenBy0(o));
+  const r=cvs.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,hit=pickScreen(x,y,o=>!o.dead&&o.type==='yard'&&o.side===ME);
   if(hit){hovE=hit;clearTimeout(hovE._t);showInfo(hit.type,hit.side,x,y)}else{hovE=null;hideInfo()}});
 cvs.addEventListener('pointerleave',()=>{hovE=null;hideInfo()});
 cvs.addEventListener('pointerdown',()=>hideInfo());

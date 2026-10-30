@@ -55,6 +55,8 @@ function applyCmd(side,c){
     case 'rally':{const b=mine(c.b);if(!b||b.k!=='b'||(b.type!=='barracks'&&b.type!=='factory'&&b.type!=='airfield'))return;b.rally={x:c.x,y:c.y};return}
     case 'rift':{const rw=mine(c.r);if(!rw||rw.type!=='rift'||rw.rcd>0)return;
       if(Math.hypot(rw.x-c.x,rw.y-c.y)>RIFT_R||occ[ti(c.x,c.y)])return;riftJump(rw,c.x,c.y);return}
+    case 'deploy':{let any=false,bad=false;for(const u of mineU(c.u))if(UDEF[u.type].deploy){if(doDeploy(u))any=true;else bad=true}
+      if(bad&&side===ME){msg("Can't deploy here: needs 3x3 open ground, off crystals and water",'bad');sfx('err')}return}
     case 'gg':s.resigned=true;return;
   }
 }

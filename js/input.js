@@ -23,6 +23,8 @@ function ping(x,y,col){fxs.push({t:'ping',x,y,age:0,life:.5,r:18,col})}
 function command(sx,sy,amove){
   const us=sel.filter(e=>e.k==='u'&&!e.dead&&e.side===ME);if(!us.length)return;
   sfx('ack');
+  /* right-click on a selected Outpost Crawler: deploy it */
+  if(!amove){const me=pickScreen(sx,sy,e=>e.k==='u'&&e.side===ME&&!e.dead&&UDEF[e.type].deploy&&sel.includes(e));if(me){issue({c:'deploy',u:[me.id]});return}}
   const w0=screenToWorld(sx,sy);if(!w0)return;const wx=r1(w0.x),wy=r1(w0.y);
   const tg=amove?null:pickScreen(sx,sy,e=>e.side!==ME&&!ally(ME,e.side)&&!e.dead&&seenBy0(e));
   issue({c:'go',u:us.map(u=>u.id),x:wx,y:wy,a:amove?1:0,t:tg?tg.id:null});
@@ -194,6 +196,7 @@ addEventListener('keydown',e=>{
   if(k==='r'&&place){rotatePlace()}
   else if(k==='a'&&(e.ctrlKey||e.metaKey)){e.preventDefault();selectArmy()}
   else if(k==='t'&&sel.some(e=>e.type==='rift'&&e.side===ME)){place=null;mode='rift'}
+  else if(k==='d'&&sel.some(u=>u.k==='u'&&u.side===ME&&UDEF[u.type].deploy)){deploySel()}
   else if(k==='g'){toggleRepair()}
   else if(k==='x'){toggleSell()}
   else if(k===' '&&alerts.length){const a=alerts[alerts.length-1];cam.x=a.x;cam.y=a.y;clampCam();e.preventDefault()}
@@ -233,6 +236,7 @@ function sellBld(b,side){
 }
 $('#sellBtn').addEventListener('click',toggleSell);
 document.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();place=null;mode=null;sfx('click')}));
+function deploySel(){const us=sel.filter(u=>u.k==='u'&&u.side===ME&&!u.dead&&UDEF[u.type].deploy);if(us.length){issue({c:'deploy',u:us.map(u=>u.id)});sfx('ack')}}
 const myArmy=()=>sel.filter(u=>u.k==='u'&&u.side===ME&&!u.dead);
 $('#tbBox').addEventListener('click',()=>{boxMode=!boxMode;sfx('click')});
 const selectArmy=()=>{if(state!=='play')return;place=null;mode=null;sel=units.filter(u=>u.side===ME&&!u.dead&&u.type!=='harv');updSel();sfx(sel.length?'ack':'err');if(!sel.length)msg('No army to select','')};

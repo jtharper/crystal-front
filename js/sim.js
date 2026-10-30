@@ -84,7 +84,7 @@ function findPath(sx,sy,gx,gy){
   const gx_=gi%MW,gy_=(gi/MW)|0;
   const h=i=>{const dx=Math.abs(i%MW-gx_),dy=Math.abs(((i/MW)|0)-gy_);return Math.max(dx,dy)+.414*Math.min(dx,dy)};
   g[si]=0;push(h(si),si);let it=0,found=false;
-  while(hf.length&&it++<6000){
+  while(hf.length&&it++<MW*MH){
     const c=pop();if(closed[c])continue;closed[c]=1;if(c===gi){found=true;break}
     const cx=c%MW,cy=(c/MW)|0;
     for(let k=0;k<8;k++){
@@ -104,7 +104,7 @@ function setPath(u,x,y){
   u.path=p&&p.length?p:null;u.pi=0;return !!u.path;
 }
 /* ---------- spacing: every unit keeps a footprint so groups spread out instead of stacking ---------- */
-const SEPR={rifle:6.5,rocket:6.5,gren:7,sniper:6.5,eng:6.5,rift:7,tank:16,htank:21,stank:15,mlrs:16,buggy:13,arty:17,harv:17};
+const SEPR={mcv:19,rifle:6.5,rocket:6.5,gren:7,sniper:6.5,eng:6.5,rift:7,tank:16,htank:21,stank:15,mlrs:16,buggy:13,arty:17,harv:17};
 const sepR=u=>SEPR[u.type]||UDEF[u.type].r;
 const goalOf=o=>o.path?o.path[o.path.length-1]:o;
 /* nearest spot around (x,y) on open ground that no other unit stands on or is heading to */
@@ -393,10 +393,25 @@ function validPlace(sid,t,tx,ty,margin,rot){
 /* structures may only go up inside the build zone around one of your Command Yards */
 const BUILD_R=12;
 const yardsOf=sid=>blds.filter(b=>!b.dead&&b.side===sid&&b.type==='yard');
+/* build zones: a square around each Command Yard, and a smaller one around each Forward Base */
+const zonesOf=sid=>blds.filter(b=>!b.dead&&b.side===sid&&(b.type==='yard'||b.type==='outpost')).map(b=>({b,cx:b.tx+b.w/2,cy:b.ty+b.h/2,R:b.type==='yard'?BUILD_R:BDEF.outpost.zone}));
 function inBuildZone(sid,tx,ty,w,h){
-  for(const b of yardsOf(sid)){const cx=b.tx+b.w/2,cy=b.ty+b.h/2;
-    if(Math.max(Math.abs(tx-cx),Math.abs(tx+w-cx),Math.abs(ty-cy),Math.abs(ty+h-cy))<=BUILD_R+.01)return true}
+  for(const z of zonesOf(sid))if(Math.max(Math.abs(tx-z.cx),Math.abs(tx+w-z.cx),Math.abs(ty-z.cy),Math.abs(ty+h-z.cy))<=z.R+.01)return true;
   return false;
+}
+/* Outpost Crawler: unfolds into a Forward Base on the 3x3 tiles under it (any open, dry ground; no build zone needed) */
+function deploySpot(u){
+  const w=BDEF.outpost.w,h=BDEF.outpost.h,bx=Math.round(u.x/T-w/2),by=Math.round(u.y/T-h/2);
+  const ok=(tx,ty)=>{if(tx<1||ty<1||tx+w>MW-1||ty+h>MH-1)return false;
+    for(let y=ty;y<ty+h;y++)for(let x=tx;x<tx+w;x++){const i=y*MW+x;if(occ[i]||ter[i]===5||ter[i]===2||cry[i]>0)return false}return true};
+  for(const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]])if(ok(bx+dx,by+dy))return {tx:bx+dx,ty:by+dy};
+  return null;
+}
+function doDeploy(u){
+  if(u.dead||!UDEF[u.type].deploy)return false;const sp=deploySpot(u);if(!sp)return false;
+  u.dead=true;u.silent=true;const b=placeBuilding(sides[u.side],UDEF[u.type].deploy,sp.tx,sp.ty,0);b.hp=Math.max(1,b.mhp*u.hp/u.mhp);b.born=time;
+  if(u.side===ME){msg(nm('outpost',ME)+' deployed: build around it','ok');sfx('ready');say('Outpost established','dep',1)}
+  return true;
 }
 function placeBuilding(s,t,tx,ty,rot){
   const b=addBld(t,s.id,tx,ty,rot),dp=doorPt(b),dv=DOOR[b.rot];
