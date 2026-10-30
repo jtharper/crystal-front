@@ -30,6 +30,7 @@ function command(sx,sy,amove){
   ping(wx,wy,!amove&&cry[ti(wx,wy)]>0?'#c46bff':amove?'#ff5b44':'#5fd68a');
 }
 function moveGroup(us,wx,wy,amove){
+  const air=us.filter(u=>u.air);if(air.length){airGo(air,wx,wy,amove);us=us.filter(u=>!u.air);if(!us.length)return}
   groupDests(us,wx,wy);
   for(const u of us){
     u.atk=null;u.cand=null;u.cap=null;u.amove=(amove&&u.type!=='harv'&&u.type!=='eng')?{x:u._dx,y:u._dy}:null;
@@ -46,9 +47,11 @@ function screenToWorld(sx,sy){
   return {x,y:z};
 }
 function toScreen(x,h,z){_v.set(x,h,z).project(camera);return {x:(_v.x+1)/2*W,y:(1-_v.y)/2*H,behind:_v.z>1}}
+/* where a unit is on screen: aircraft are picked at their altitude */
+const uPickH=u=>{if(u.air){const r=ents.get(u.id);return (r?r.g.position.y:gH(u.x,u.y)+u.alt)+5}return gH(u.x,u.y)+9};
 function pickScreen(sx,sy,pred){
   let best=null,bd=20;
-  for(const u of units){if(!pred(u))continue;const p=toScreen(u.x,gH(u.x,u.y)+9,u.y);if(p.behind)continue;const d=Math.hypot(p.x-sx,p.y-sy);if(d<bd){bd=d;best=u}}
+  for(const u of units){if(!pred(u))continue;const p=toScreen(u.x,uPickH(u),u.y);if(p.behind)continue;const d=Math.hypot(p.x-sx,p.y-sy)-(u.air?10:0);if(d<bd){bd=d;best=u}}
   if(best)return best;
   const gs=[];for(const b of blds){if(!pred(b))continue;const r=ents.get(b.id);if(r&&r.g.visible)gs.push(r.g)}
   if(gs.length){ndc.set(sx/W*2-1,-(sy/H)*2+1);ray.setFromCamera(ndc,camera);const hit=ray.intersectObjects(gs,true).find(h=>h.object.name!=='dome'&&h.object.visible); /* clicks pass through shield domes */
@@ -62,7 +65,7 @@ function selectAt(sx,sy,add,dbl){
   if(!add)sel=[];
   if(!e)return;
   if(dbl&&e.k==='u'){
-    for(const u of units){if(u.side!==ME||u.type!==e.type||u.dead||sel.includes(u))continue;const p=toScreen(u.x,gH(u.x,u.y)+9,u.y);if(!p.behind&&p.x>=0&&p.x<=W&&p.y>=0&&p.y<=H)sel.push(u)}
+    for(const u of units){if(u.side!==ME||u.type!==e.type||u.dead||sel.includes(u))continue;const p=toScreen(u.x,uPickH(u),u.y);if(!p.behind&&p.x>=0&&p.x<=W&&p.y>=0&&p.y<=H)sel.push(u)}
     sfx('click');return;
   }
   const i=sel.indexOf(e);if(i>=0)sel.splice(i,1);else sel.push(e);
@@ -71,7 +74,7 @@ function selectAt(sx,sy,add,dbl){
 function boxSelect(x0,y0,x1,y1,add){
   const l=Math.min(x0,x1),r=Math.max(x0,x1),t=Math.min(y0,y1),b=Math.max(y0,y1);
   if(!add)sel=[];
-  const got=[];for(const u of units){if(u.side!==ME||u.dead||sel.includes(u))continue;const p=toScreen(u.x,gH(u.x,u.y)+9,u.y);if(!p.behind&&p.x>=l&&p.x<=r&&p.y>=t&&p.y<=b)got.push(u)}
+  const got=[];for(const u of units){if(u.side!==ME||u.dead||sel.includes(u))continue;const p=toScreen(u.x,uPickH(u),u.y);if(!p.behind&&p.x>=l&&p.x<=r&&p.y>=t&&p.y<=b)got.push(u)}
   const army=got.filter(u=>u.type!=='harv');for(const u of (army.length?army:got))sel.push(u);
   if(sel.length)sfx('click');
 }

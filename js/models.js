@@ -379,6 +379,7 @@ const GEMB={tank_v:[1,-6.2,5.87,0,1.9],htank_v:[1,-8.5,7.27,0,2.4],mlrs_v:[0,11.
   harv_v:[0,8.6,20.62,6,2.1],tank_s:[1,1,8.45,3,2],tank_h:[1,-1,7.2,0,2.2]};
 const GER={htank_s:3,mlrs_s:1.8,buggy_s:1.6,arty_s:2.2,harv_s:2.2,stank_s:1.8,htank_h:2.6,mlrs_h:2.2,buggy_h:1.4,arty_h:2.2,harv_h:2.2};
 function buildUnit(type,f){
+  if(UDEF[type].air)return buildAir(type,f);
   const g=new THREE.Group(),st=f>>4,s=f&15;
   {const ur=UDEF[type].r+3;P(g,G.ring(ur,.55),TG[s],0,.5,0)}
   /* Blender infantry (see /blender/infantry.py): legs swing from the hips, the gun group recoils */
@@ -430,6 +431,17 @@ function buildUnit(type,f){
     else{P(g,G.cylx(.8,11),MT.gun,5.8,10,2.6);P(g,G.box(4,2.6,1.6),MT.dark,1.6,9,2.6)}
   }
   return g;
+}
+/* aircraft (see /blender/aircraft.py): one model for every faction, finished in the side's colours. The model sits in an
+   inner group so the game can bank and pitch it; rotors / bombs / landing gear are named groups */
+const AIRS={gunship:1.12,bomber:1};
+function buildAir(type,f){
+  const g=new THREE.Group(),s=f&15,inner=new THREE.Group();inner.name='air';g.add(inner);
+  const pts=GLB.scene[type]&&glbInto(inner,type,f,0,type==='gunship'?['rotorL','rotorR']:['bombs','gear']);
+  if(pts){if(pts.emblem)uEmblem(inner,f,pts.emblem[0],pts.emblem[1]+.1,pts.emblem[2],type==='bomber'?3.2:2.2)}
+  else if(type==='gunship'){P(inner,G.box(30,9,10),TD[s],0,8,0);for(const z of [-16,16])P(inner,G.cyl(7,7,4,16),MT.gun,0,10,z);P(inner,G.box(22,2,3),MT.gun,-18,10,0)}
+  else{P(inner,G.box(48,6,8),TD[s],0,7,0);P(inner,new THREE.BoxGeometry(18,1.4,46),MT.gun,-8,7,0)}
+  inner.scale.setScalar(AIRS[type]||1);return g;
 }
 function addBin(g,x){const bin=part(G.box(16,1,13),MT.crys,x,13,0);bin.name='bin';bin.userData.keep=true;bin.scale.y=.01;g.add(bin)}
 /* Iron Syndicate: angular, spiked, heavy */
@@ -562,6 +574,12 @@ function buildBld(type,f){
   const transformer=(x,z)=>{box(x,PT+.8,z,6,6,4.6,MT.steel);for(const sx of [-1,1])for(let i=0;i<3;i++)bar(x+sx*3.25,PT+3.8,z-1.5+i*1.5,.5,5,.3,MT.dark);
     for(const dx of [-1.8,0,1.8]){P(g,G.cyl(.45,.6,3,8),MT.ceram,x+dx,PT+8.3,z);P(g,G.sph(.6),MT.ceram,x+dx,PT+9.9,z)}};
   switch(type){
+    case 'airfield':{
+      /* Blender model (see /blender/airfield.py): arched hangar, control tower with turning radar, two landing pads */
+      if(GLB.scene.airfield&&glbInto(g,'airfield',f,0,['dish'])){emblem(g,f,24,12.1,-32,4.4);break}
+      box(0,.3,0,w-2,.6,h-2,MT.concrete);for(const x of [-24,24]){P(g,G.cyl(16,16,.5,32),MT.ceram,x,.8,24);P(g,G.ring(10.5,.6),TB,x,1.1,24)}
+      box(-26,2,-25,40,22,42,W);box(30,2,-28,26,10,30,W);P(g,G.cyl(4,4,34,16),MT.ceram,36,17,-24);P(g,G.cyl(6,5,5,12),MT.win,36,34,-24);
+      break}
     case 'power':{
       /* Blender model (see /blender/power_plant.py) when loaded */
       const gp=GLB.scene.power&&glbInto(g,'power',f,0);
@@ -945,7 +963,7 @@ function modelUnit(u){
   const fu=skinOf(u.side),g=fromTmpl('u:'+u.type+':'+fu,()=>buildUnit(u.type,fu));g.userData.ent=u;
   const tu=g.getObjectByName('turret')||null;
   let cm=null;if(UDEF[u.type].stealth){cm=[];g.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;cm.push(o.material)}})}
-  return {g,e:u,cm,turret:tu,tx0:tu?tu.position.x:0,bin:g.getObjectByName('bin')||null,legL:g.getObjectByName('legL'),legR:g.getObjectByName('legR'),gun:g.getObjectByName('gun'),top:UTOP[u.type]};
+  return {g,e:u,cm,turret:tu,tx0:tu?tu.position.x:0,air:g.getObjectByName('air')||null,rotL:g.getObjectByName('rotorL')||null,rotR:g.getObjectByName('rotorR')||null,bombs:g.getObjectByName('bombs')||null,gear:g.getObjectByName('gear')||null,bin:g.getObjectByName('bin')||null,legL:g.getObjectByName('legL'),legR:g.getObjectByName('legR'),gun:g.getObjectByName('gun'),top:UTOP[u.type]};
 }
 function modelBld(b){
   const fb=skinOf(b.side),g=fromTmpl('b:'+b.type+':'+fb,()=>buildBld(b.type,fb));g.userData.ent=b;

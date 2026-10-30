@@ -195,8 +195,8 @@ TEX.panelN=nrmMap(TEX.panel,6);TEX.concreteN=nrmMap(TEX.concrete,4);TEX.rockN=nr
 for(const m of TM){m.map=TEX.panel;m.normalMap=TEX.panelN;m.normalScale=new THREE.Vector2(.35,.35)}
 function part(geo,m,x,y,z){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;return o}
 function P(g,geo,m,x,y,z,rx,ry,rz,sx,sy,sz){const o=part(geo,m,x,y,z);if(rx||ry||rz)o.rotation.set(rx||0,ry||0,rz||0);if(sx)o.scale.set(sx,sy||sx,sz||sx);g.add(o);return o}
-const BTOP={shield:44,spike:80,radar:42,yard:50,power:42,refinery:50,barracks:38,factory:42,turret:32,guard:32,missile:26,tech:50};
-const UTOP={gren:22,htank:32,mlrs:28,stank:24,rift:22,tank:28,harv:26,rifle:20,rocket:22,sniper:22,eng:21,buggy:20,arty:30};
+const BTOP={shield:44,spike:80,radar:42,yard:50,power:42,refinery:50,barracks:38,factory:42,turret:32,guard:32,missile:26,tech:50,airfield:40};
+const UTOP={gren:22,htank:32,mlrs:28,stank:24,rift:22,tank:28,harv:26,rifle:20,rocket:22,sniper:22,eng:21,buggy:20,arty:30,gunship:14,bomber:12};
 
 /* merge each group's static parts per material, so a model costs a few draw calls */
 function mergeMeshes(list){

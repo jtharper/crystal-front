@@ -10,7 +10,7 @@ function simCanStep(){return typeof netCanStep!=='function'||netCanStep(simTick)
 /* fingerprint of everything that matters in the game state, compared between players to catch any desync */
 const _hb=new Float64Array(1),_hw=new Uint32Array(_hb.buffer);
 function simHash(){let h=2166136261>>>0;const f=v=>{_hb[0]=v||0;h=Math.imul(h^_hw[0],16777619);h=Math.imul(h^_hw[1],16777619)};
-  for(const u of units){f(u.id);f(u.x);f(u.y);f(u.hp);f(u.ang)}for(const b of blds){f(b.id);f(b.hp);f(b.side)}for(const s of sides)f(s.credits);f(projs.length);return h>>>0}
+  for(const u of units){f(u.id);f(u.x);f(u.y);f(u.hp);f(u.ang);if(u.air){f(u.alt);f(u.ammo)}}for(const b of blds){f(b.id);f(b.hp);f(b.side)}for(const s of sides)f(s.credits);f(projs.length);return h>>>0}
 function newWorld(sd0,facs,opt){SIMIN++;try{newWorld0(sd0,facs,opt)}finally{SIMIN--}}
 function newWorld0(sd0,facs,opt){
   opt=opt||{};
@@ -139,11 +139,12 @@ function update(dt){
     p.px=p.x;p.py=p.y;
     const dx=t.x-p.x,dy=t.y-p.y,dist=Math.hypot(dx,dy),st=p.sp*dt,reach=t.k==='b'?Math.max(t.w,t.h)*T*.35:6;
     if(dist<=st+reach){
-      const arm=t.k==='b'?'bld':UDEF[t.type].armor;
+      if(t.k==='pt'){bombHit(p);p.dead=true;continue}
+      const arm=armorOf(t);
       hurt(t,p.dmg*MUL[p.wt][arm],p.src);p.dead=true;sfx('hit',t.x,t.y);
-      if(p.wt==='grenade'){for(const u of units)if(!u.dead&&u!==t&&enemy(u.side,p.side)&&Math.hypot(u.x-t.x,u.y-t.y)<T*1.1)hurt(u,p.dmg*.5*MUL.grenade[UDEF[u.type].armor],p.src);
+      if(p.wt==='grenade'){for(const u of units)if(!u.dead&&u!==t&&enemy(u.side,p.side)&&!flying(u)&&Math.hypot(u.x-t.x,u.y-t.y)<T*1.1)hurt(u,p.dmg*.5*MUL.grenade[armorOf(u)],p.src);
         for(let i=0;i<2;i++)fxs.push({t:'boom',x:t.x+(rng()-.5)*20,y:t.y+(rng()-.5)*20,age:-rng()*.1,life:.35,r:11});fxs.push({t:'dust',x:t.x,y:t.y,h:2,age:0,life:.9,r:9})}
-      if(p.wt==='shell'){for(const u of units)if(!u.dead&&u!==t&&enemy(u.side,p.side)&&Math.hypot(u.x-t.x,u.y-t.y)<T*1.4)hurt(u,p.dmg*.45*MUL.shell[UDEF[u.type].armor],p.src);
+      if(p.wt==='shell'){for(const u of units)if(!u.dead&&u!==t&&enemy(u.side,p.side)&&!flying(u)&&Math.hypot(u.x-t.x,u.y-t.y)<T*1.4)hurt(u,p.dmg*.45*MUL.shell[armorOf(u)],p.src);
         for(let i=0;i<4;i++)fxs.push({t:'boom',x:t.x+(rng()-.5)*30,y:t.y+(rng()-.5)*30,age:-rng()*.15,life:.45,r:16});fxs.push({t:'smoke',x:t.x,y:t.y,age:0,life:1.4,r:12})}
       if(p.laser)fxs.push({t:'flash',x:t.x,y:t.y,h:p.h1,col:p.col,age:0,life:.18,r:p.wt==='bullet'?4:9});
       else fxs.push({t:'boom',x:p.x,y:p.y,age:0,life:.3,r:p.wt==='bullet'||p.wt==='snipe'?5:12});

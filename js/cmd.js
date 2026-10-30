@@ -18,6 +18,8 @@ function applyCmd(side,c){
       if(tg&&!tg.dead&&tg.side!==side&&!ally(side,tg.side)){
         const capB=tg.k==='b';
         for(const u of us){
+          if(u.air){if(capB&&BDEF[tg.type].cap)airGo([u],tg.x,tg.y,false);else airAttack(u,tg);continue}
+          if(flying(tg)&&!canHit(u,tg)){u.atk=null;u.amove=null;setPath(u,tg.x,tg.y);continue}
           if(UDEF[u.type].eng){if(capB){u.cap=tg;u.atk=null;u.path=null;u.amove=null;pathToward(u,tg)}else{u.cap=null;setPath(u,tg.x,tg.y)}}
           else if(capB&&BDEF[tg.type].cap){u.atk=null;setPath(u,tg.x,tg.y)}
           else if(UDEF[u.type].dmg){u.atk=tg;u.path=null;u.amove=null;u.hold=false}else{u.atk=null;setPath(u,tg.x,tg.y);u.hold=true}}
@@ -30,11 +32,11 @@ function applyCmd(side,c){
       }
       moveGroup(us,c.x,c.y,!!c.a);return;
     }
-    case 'stop':for(const u of mineU(c.u)){u.path=null;u.atk=null;u.amove=null;u.hold=false}return;
+    case 'stop':for(const u of mineU(c.u)){if(u.air){airStop(u);continue}u.path=null;u.atk=null;u.amove=null;u.hold=false}return;
     case 'build':{const t=c.t,ct=CAT[t];if(!def(t)||!ct||atCap(s,t))return;
       if(s.fac!=null&&def(t).fac!=null&&def(t).fac!==s.fac)return;
       const pb=c.p!=null?mine(c.p):null;
-      if(!enqueue(s,t,(ct==='i'||ct==='v')&&pb&&prodQ(pb)?pb:null)&&side===ME){msg(ct==='b'?'Already building a structure.':ct==='d'?'Already building a defense.':'Queue is full.','bad');sfx('err')}
+      if(!enqueue(s,t,(ct==='i'||ct==='v'||ct==='a')&&pb&&prodQ(pb)?pb:null)&&side===ME){msg(ct==='b'?'Already building a structure.':ct==='d'?'Already building a defense.':t==='bomber'&&bomberRoom(s)<=0?'Every landing pad is taken: build another Airfield.':'Queue is full.','bad');sfx('err')}
       return}
     case 'cancel':{const t=c.t,ct=CAT[t];if(!ct)return;
       if(isStruct(ct)){
@@ -50,7 +52,7 @@ function applyCmd(side,c){
       placeBuilding(s,t,c.x|0,c.y|0,rot);s[RD(ct)]=null;return}
     case 'sell':sellBld(mine(c.b),side);return;
     case 'repair':{const b=mine(c.b);if(!b||b.k!=='b')return;b.repairing=c.on==null?!b.repairing:!!c.on;return}
-    case 'rally':{const b=mine(c.b);if(!b||b.k!=='b'||(b.type!=='barracks'&&b.type!=='factory'))return;b.rally={x:c.x,y:c.y};return}
+    case 'rally':{const b=mine(c.b);if(!b||b.k!=='b'||(b.type!=='barracks'&&b.type!=='factory'&&b.type!=='airfield'))return;b.rally={x:c.x,y:c.y};return}
     case 'rift':{const rw=mine(c.r);if(!rw||rw.type!=='rift'||rw.rcd>0)return;
       if(Math.hypot(rw.x-c.x,rw.y-c.y)>RIFT_R||occ[ti(c.x,c.y)])return;riftJump(rw,c.x,c.y);return}
     case 'gg':s.resigned=true;return;
