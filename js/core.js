@@ -94,7 +94,8 @@ const BDEF={
   shield:{name:'Shield Generator',w:2,h:2,hp:900,cost:900,time:14,power:-40,vis:7,req:['tech'],fac:0},
   spike:{name:'Crystal Spike',w:2,h:2,hp:3000,vis:5,power:0,cap:true},
   radar:{name:'Radar Tower',w:2,h:2,hp:3000,vis:16,power:0,cap:true},
-  missile:{name:'Missile Tower',w:1,h:1,hp:500,cost:600,time:12,power:-25,vis:9,req:['tech'],range:8.5,dmg:40,rof:2,wt:'rocket',psp:360}
+  missile:{name:'Missile Tower',w:1,h:1,hp:500,cost:600,time:12,power:-25,vis:9,req:['tech'],range:8.5,dmg:40,rof:2,wt:'rocket',psp:360},
+  airfield:{name:'Airfield',w:3,h:3,hp:1000,cost:1000,time:16,power:-40,vis:7,req:['factory']}
 };
 /* roles: gunmen beat infantry; rockets beat vehicles and buildings but barely scratch infantry;
    heavy units are slow and hit hard, light units are fast, cheap and fragile */
@@ -111,20 +112,33 @@ const UDEF={
   mlrs:{name:'Missile Carrier',cost:900,time:14,hp:220,speed:70,range:9,dmg:60,rof:3,wt:'rocket',psp:330,vis:8,armor:'veh',r:10,turn:5},
   buggy:{name:'Raider Buggy',cost:400,time:7,hp:180,speed:128,range:5.5,dmg:8,rof:.35,wt:'bullet',psp:900,vis:8,armor:'veh',r:9,turn:7},
   arty:{name:'Siege Artillery',cost:1000,time:16,hp:240,speed:42,range:11,dmg:80,rof:3.6,wt:'shell',psp:380,vis:7,armor:'veh',r:11,turn:3,req:['tech']},
-  harv:{name:'Harvester',cost:600,time:12,hp:320,speed:52,vis:5,armor:'veh',r:10,turn:5,cap:600}
+  harv:{name:'Harvester',cost:600,time:12,hp:320,speed:52,vis:5,armor:'veh',r:10,turn:5,cap:600},
+  /* aircraft fly over everything. Only rocket weapons (rocket infantry, missile carriers, missile towers) can hit them
+     while they are in the air; on the pad they can be hit like a vehicle */
+  gunship:{name:'Gunship',cost:1100,time:16,hp:300,speed:118,range:5.5,dmg:13,rof:.36,wt:'chain',psp:1100,vis:8,armor:'air',r:14,turn:3.2,air:true,alt:62},
+  bomber:{name:'Bomber',cost:1400,time:20,hp:260,speed:205,range:1,dmg:160,rof:1,wt:'bomb',psp:0,vis:8,armor:'air',r:16,turn:1.9,air:true,alt:92,ammo:2,rearm:9}
 };
 /* damage multipliers: weapon vs armor */
-const MUL={snipe:{inf:2,veh:.1,bld:.08},shell:{inf:.9,veh:.6,bld:1.6},bullet:{inf:1.4,veh:.12,bld:.1},rocket:{inf:.22,veh:1.6,bld:1.3},grenade:{inf:1.25,veh:.35,bld:1.2},cannon:{inf:.3,veh:1.15,bld:1.5},tcannon:{inf:.8,veh:1,bld:0}};
-const CAT={power:'b',refinery:'b',barracks:'b',factory:'b',turret:'d',guard:'d',tech:'b',repair:'b',missile:'d',rifle:'i',rocket:'i',sniper:'i',eng:'i',rift:'i',stank:'v',shield:'d',tank:'v',gren:'i',htank:'v',mlrs:'v',harv:'v',buggy:'v',arty:'v'};
-const LISTS={b:['power','refinery','barracks','factory','tech'],d:['turret','guard','missile','shield'],i:['rifle','rocket','gren','sniper','eng','rift'],v:['tank','htank','mlrs','buggy','arty','stank','harv']};
-const TITLES={b:'Structures',d:'Defenses',i:'Infantry',v:'Vehicles'};
+const MUL={snipe:{inf:2,veh:.1,bld:.08,air:0},shell:{inf:.9,veh:.6,bld:1.6,air:0},bullet:{inf:1.4,veh:.12,bld:.1,air:0},rocket:{inf:.22,veh:1.6,bld:1.3,air:1.25},grenade:{inf:1.25,veh:.35,bld:1.2,air:0},cannon:{inf:.3,veh:1.15,bld:1.5,air:0},tcannon:{inf:.8,veh:1,bld:0,air:0},
+  chain:{inf:1.35,veh:.6,bld:.35,air:0},bomb:{inf:.7,veh:1.15,bld:1.5,air:0}};
+/* aircraft: flying = off the ground (a parked aircraft counts as a vehicle); only weapons with an air multiplier hit fliers */
+const isAirT=t=>!!(UDEF[t]&&UDEF[t].air);
+const flying=e=>e.k==='u'&&(e.alt||0)>8;
+const armorOf=e=>e.k==='b'?'bld':flying(e)?'air':UDEF[e.type].armor==='air'?'veh':UDEF[e.type].armor;
+const wpnOf=e=>(e.k==='b'?BDEF[e.type]:UDEF[e.type]).wt;
+function canHit(a,t){const w=wpnOf(a);if(!w||!MUL[w])return false;return flying(t)?MUL[w].air>0:true}
+const CAT={power:'b',refinery:'b',barracks:'b',factory:'b',turret:'d',guard:'d',tech:'b',repair:'b',missile:'d',rifle:'i',rocket:'i',sniper:'i',eng:'i',rift:'i',stank:'v',airfield:'b',gunship:'a',bomber:'a',shield:'d',tank:'v',gren:'i',htank:'v',mlrs:'v',harv:'v',buggy:'v',arty:'v'};
+const LISTS={b:['power','refinery','barracks','factory','airfield','tech'],d:['turret','guard','missile','shield'],i:['rifle','rocket','gren','sniper','eng','rift'],v:['tank','htank','mlrs','buggy','arty','stank','harv'],a:['gunship','bomber']};
+const TITLES={b:'Structures',d:'Defenses',i:'Infantry',v:'Vehicles',a:'Aircraft'};
 const def=t=>BDEF[t]||UDEF[t];
 const UNAMES=[
-  {gren:'Breacher',htank:'Citadel Heavy Tank',mlrs:'Javelin Carrier',shield:'Aegis Shield Generator',rifle:'Trooper',rocket:'Lancer',eng:'Field Engineer',sniper:'Ranger',tank:'Bulwark Tank',buggy:'Pathfinder Rover',arty:'Longbow Artillery',harv:'Crystal Hauler'},
-  {gren:'Bombardier',htank:'Juggernaut Heavy Tank',mlrs:'Hellstorm Launcher',stank:'Phantom Stealth Tank',rifle:'Conscript',rocket:'Breaker',eng:'Saboteur',sniper:'Deadeye',tank:'Ironclad Tank',buggy:'Marauder Buggy',arty:'Hellfire Howitzer',harv:'Reaper Harvester'},
-  {gren:'Arc Grenadier',htank:'Monolith Heavy Tank',mlrs:'Lance Battery',rift:'Rift Walker',rifle:'Warden',rocket:'Striker',eng:'Technician',sniper:'Spectre',tank:'Viper Tank',buggy:'Hornet Buggy',arty:'Prism Artillery',harv:'Gleaner'}];
+  {gren:'Breacher',htank:'Citadel Heavy Tank',mlrs:'Javelin Carrier',shield:'Aegis Shield Generator',rifle:'Trooper',rocket:'Lancer',eng:'Field Engineer',sniper:'Ranger',tank:'Bulwark Tank',buggy:'Pathfinder Rover',arty:'Longbow Artillery',harv:'Crystal Hauler',gunship:'Kestrel Gunship',bomber:'Albatross Bomber',airfield:'Airbase'},
+  {gren:'Bombardier',htank:'Juggernaut Heavy Tank',mlrs:'Hellstorm Launcher',stank:'Phantom Stealth Tank',rifle:'Conscript',rocket:'Breaker',eng:'Saboteur',sniper:'Deadeye',tank:'Ironclad Tank',buggy:'Marauder Buggy',arty:'Hellfire Howitzer',harv:'Reaper Harvester',gunship:'Vulture Gunship',bomber:'Warhammer Bomber',airfield:'Airstrip'},
+  {gren:'Arc Grenadier',htank:'Monolith Heavy Tank',mlrs:'Lance Battery',rift:'Rift Walker',rifle:'Warden',rocket:'Striker',eng:'Technician',sniper:'Spectre',tank:'Viper Tank',buggy:'Hornet Buggy',arty:'Prism Artillery',harv:'Gleaner',gunship:'Dragonfly Gunship',bomber:'Manta Bomber',airfield:'Skyport'}];
 const nm=(t,side)=>{const fc=(typeof sides!=='undefined'&&sides&&sides[side||0])?sides[side||0].fac:pickFac;return (UNAMES[fc]&&UNAMES[fc][t])||def(t).name};
-const RD=c=>c==='d'?'readyD':'ready',isStruct=c=>c==='b'||c==='d';
+const RD=c=>c==='d'?'readyD':'ready',isStruct=c=>c==='b'||c==='d',isUnitCat=c=>c==='i'||c==='v'||c==='a';
+/* the building that trains each unit category */
+const PRODB={i:'barracks',v:'factory',a:'airfield'};
 /* crystal tiles start regrowing after CRY_WAIT seconds untouched and take CRY_REGROW seconds to refill */
 const CRY_WAIT=25,CRY_REGROW=240;
 /* crystal per field tile is multiplied by CRY_RICH: harvesting speed and income stay the same, fields last longer */

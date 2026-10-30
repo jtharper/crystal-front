@@ -5,23 +5,24 @@ const ICONS={
   b:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21V11l5-3v3l5-3v3l5-3V4h3v17z"/></svg>',
   i:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8z M7 9h10l2 6h-3v6h-3v-5h-2v5H8v-6H5z"/></svg>',
   v:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15h18l-2 5H5z M5 10h11l2 4H5z M15 11h8v2h-8z"/></svg>',
-  d:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5z M12 6l-4 1.6V11c0 3 1.7 5.7 4 7z"/></svg>'
+  d:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5z M12 6l-4 1.6V11c0 3 1.7 5.7 4 7z"/></svg>',
+  a:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2h2l1 7 8 4v2l-8-1.5-.6 4.8 2.6 1.9V22l-4-1-4 1v-1.8l2.6-1.9L10 13.5 2 15v-2l8-4z"/></svg>'
 };
-const UNLOCK={b:null,d:'barracks',i:'barracks',v:'factory'};
+const UNLOCK={b:null,d:'barracks',i:'barracks',v:'factory',a:'airfield'};
 let curTab='b',trayOpen=false;
 function showTab(c){curTab=c;for(const k in tabSec){tabSec[k].hidden=k!==c;tabBtn[k].classList.toggle('on',k===c);tabBtn[k].setAttribute('aria-selected',k===c)}}
-for(const c of ['b','d','i','v']){
+for(const c of ['b','d','i','v','a']){
   const tb=document.createElement('button');tb.type='button';tb.className='tb';tb.setAttribute('role','tab');
-  tb.innerHTML=ICONS[c]+`<span>${{b:'Base',d:'Defense',i:'Infantry',v:'Vehicles'}[c]}</span><i class="dot"></i><i class="tp"></i>`;
+  tb.innerHTML=ICONS[c]+`<span>${{b:'Base',d:'Defense',i:'Infantry',v:'Vehicles',a:'Air'}[c]}</span><i class="dot"></i><i class="tp"></i>`;
   tb.setAttribute('aria-label',UNLOCK[c]?`${TITLES[c]} (build a ${BDEF[UNLOCK[c]].name} to unlock)`:TITLES[c]);
   tb.addEventListener('click',()=>{if(tb.disabled)return;tb.classList.remove('fresh');if(DESK){if(trayOpen&&curTab===c)trayOpen=false;else{showTab(c);trayOpen=true}}else if(selBarOn){selBarOff=selKey;selBarOn=false;$('#selBar').hidden=true;showTab(c);trayOpen=true}else if(trayOpen&&curTab===c){trayOpen=false}else{showTab(c);trayOpen=true}sfx('click');updUI()});
   barEl.appendChild(tb);tabBtn[c]=tb;
   const sec=document.createElement('section');sec.className='tab';sec.setAttribute('role','tabpanel');tabSec[c]=sec;
-  sec.innerHTML=`<h3>${TITLES[c]}</h3>`+((c==='i'||c==='v')?`<div class="subtabs" id="sub_${c}" hidden></div>`:'');
+  sec.innerHTML=`<h3>${TITLES[c]}</h3>`+(isUnitCat(c)?`<div class="subtabs" id="sub_${c}" hidden></div>`:'');
   for(const t of LISTS[c]){
     const d=def(t),b=document.createElement('button');
     b.type='button';b.className='bt';b.dataset.t=t;
-    const reqs=(d.req||[]).map(r=>BDEF[r].name);if(c==='i')reqs.push('Barracks');if(c==='v')reqs.push('War Factory');
+    const reqs=(d.req||[]).map(r=>BDEF[r].name);if(isUnitCat(c))reqs.push(BDEF[PRODB[c]].name);
     b.setAttribute('aria-label',`${d.name}. Needs: ${reqs.join(', ')||'none'}. Build time ${d.time}s.`);
     b.innerHTML=`<img alt=""><i class="pg"></i><span class="nm">${d.name}</span><span class="cs">$${d.cost}</span><span class="bd"></span><b class="qn" hidden></b><i class="pgb"></i>`;
     b.addEventListener('click',()=>onBuild(t));
@@ -31,20 +32,21 @@ for(const c of ['b','d','i','v']){
   tabsEl.appendChild(sec);
 }
 showTab('b');
-for(const c of ['i','v'])$('#sub_'+c).addEventListener('click',e=>{const b=e.target.closest('.stb');if(!b)return;prodSel[c]=+b.dataset.id;sfx('click');updUI()});
-const unlocked={d:false,i:false,v:false};
+for(const c of ['i','v','a'])$('#sub_'+c).addEventListener('click',e=>{const b=e.target.closest('.stb');if(!b)return;prodSel[c]=+b.dataset.id;sfx('click');updUI()});
+const unlocked={d:false,i:false,v:false,a:false};
 function onBuild(t){
   if(state!=='play')return;
   const s=sides[ME],c=CAT[t];
   if(isStruct(c)&&s[RD(c)]===t){place={t,rot:lastRot};mode=null;mouse={x:W/2,y:H*.42,in:true};sfx('click');return}
-  if(atCap(s,t)){msg('Limit reached: only one '+BDEF[t].name+' allowed.','bad');sfx('err');return}
-  if(!canBuild(s,t)){msg('Requires '+((def(t).req||[]).concat(c==='i'?['barracks']:c==='v'?['factory']:[]).map(r=>BDEF[r].name).join(', ')),'bad');sfx('err');return}
+  if(t==='bomber'&&atCap(s,t)&&has(s,'airfield')){msg('Every landing pad is taken: each Airfield holds two bombers.','bad');sfx('err');return}
+  if(atCap(s,t)&&BDEF[t]){msg('Limit reached: only one '+BDEF[t].name+' allowed.','bad');sfx('err');return}
+  if(!canBuild(s,t)){msg('Requires '+((def(t).req||[]).concat(isUnitCat(c)?[PRODB[c]]:[]).map(r=>BDEF[r].name).join(', ')),'bad');sfx('err');return}
   if(isStruct(c)&&s.q[c].length){msg(c==='b'?'Already building a structure.':'Already building a defense.','bad');sfx('err');say('Unable to comply','err',2);return}
-  const cp=(c==='i'||c==='v')?curProd(c):null;if(cp&&prodQ(cp).length>=6){msg('Queue is full.','bad');sfx('err');return}
+  const cp=isUnitCat(c)?curProd(c):null;if(cp&&prodQ(cp).length>=6){msg('Queue is full.','bad');sfx('err');return}
   issue({c:'build',t,p:cp?cp.id:null});sfx('click');say(c==='i'?'Training':'Building','build',.6);
 }
 function onCancel(t){
-  if(state!=='play')return;const c=CAT[t],cp=(c==='i'||c==='v')?curProd(c):null;
+  if(state!=='play')return;const c=CAT[t],cp=isUnitCat(c)?curProd(c):null;
   issue({c:'cancel',t,p:cp?cp.id:null});if(isStruct(c)&&place&&place.t===t)place=null;
 }
 let wasLow=false;
@@ -61,7 +63,7 @@ function updUI(){
   {const tb=$('#tbar');tb.hidden=true;if(!tb.hidden){const hasU=myArmy().length>0;$('#tbBox').classList.toggle('on',boxMode);$('#tbAtk').classList.toggle('on',mode==='amove');$('#tbAtk').disabled=!hasU;$('#tbStop').disabled=!hasU}}
   $('#sellBtn').classList.toggle('on',mode==='sell');$('#sellBtn').setAttribute('aria-pressed',mode==='sell');
   $('#repBtn').classList.toggle('on',mode==='repair');$('#repBtn').setAttribute('aria-pressed',mode==='repair');
-  for(const c of ['b','d','i','v']){
+  for(const c of ['b','d','i','v','a']){
     const tb=tabBtn[c],open=!UNLOCK[c]||has(s,UNLOCK[c]);
     if(UNLOCK[c]){
       if(open&&!unlocked[c]&&state==='play'){unlocked[c]=true;tb.classList.add('fresh');msg(TITLES[c]+' unlocked','ok')}
@@ -69,12 +71,12 @@ function updUI(){
     }
     tb.disabled=!open;
     if(!open&&curTab===c)showTab('b');
-    const q=(c==='i'||c==='v')?qAll(s,c):s.q[c],q0=q[0]&&LISTS[c].includes(q[0].t)?q[0]:null;tb.querySelector('.tp').style.width=(q0?q0.prog*100:0)+'%';
+    const q=isUnitCat(c)?qAll(s,c):s.q[c],q0=q[0]&&LISTS[c].includes(q[0].t)?q[0]:null;tb.querySelector('.tp').style.width=(q0?q0.prog*100:0)+'%';
     tb.classList.toggle('has',isStruct(c)&&!!s[RD(c)]);
   }
   $('#army').textContent=units.filter(u=>u.side===ME&&u.type!=='harv').length;
   for(const t in btn){
-    const b=btn[t],c=CAT[t],cp=(c==='i'||c==='v')?curProd(c):null,q=cp?prodQ(cp):(c==='i'||c==='v')?[]:s.q[c],d=def(t);
+    const b=btn[t],c=CAT[t],cp=isUnitCat(c)?curProd(c):null,q=cp?prodQ(cp):isUnitCat(c)?[]:s.q[c],d=def(t);
     const first=q[0]&&q[0].t===t?q[0]:null,n=q.filter(i=>i.t===t).length;
     let badge='',pg=0;
     if(isStruct(c)&&s[RD(c)]===t)badge='PLACE';
@@ -87,28 +89,29 @@ function updUI(){
     b.querySelector('.bd').textContent=badge;
     b.querySelector('.pg').style.height=(first?100-pg:0)+'%';b.querySelector('.pgb').style.width=pg+'%';
   }
-  for(const c of ['i','v']){
+  for(const c of ['i','v','a']){
     const el=$('#sub_'+c),ps=prods(s,c);el.hidden=ps.length<2;if(ps.length<2)continue;
     const key=ps.map(p=>p.id).join(',');
-    if(el.dataset.k!==key){el.dataset.k=key;el.innerHTML=ps.map((p,i)=>`<button type="button" class="stb" data-id="${p.id}">${c==='i'?'Barracks':'Factory'} ${i+1}<b></b><i></i></button>`).join('')}
+    if(el.dataset.k!==key){el.dataset.k=key;el.innerHTML=ps.map((p,i)=>`<button type="button" class="stb" data-id="${p.id}">${c==='i'?'Barracks':c==='a'?'Airfield':'Factory'} ${i+1}<b></b><i></i></button>`).join('')}
     const cur=curProd(c);
     for(const b of el.children){const p=ps.find(x=>x.id===+b.dataset.id);if(!p)continue;const q=prodQ(p);
       b.classList.toggle('on',p===cur);b.querySelector('i').style.width=(q[0]?q[0].prog*100:0)+'%';b.querySelector('b').textContent=q.length?q.length:''}
   }
   updSel();
 }
-const ROLE={gren:['Heavy trooper, area damage','Infantry · Buildings','Tanks'],htank:['Slow twin-cannon heavy tank','Tanks · Buildings','Infantry'],mlrs:['Long-range missile carrier','Tanks · Buildings','Infantry'],shield:['Halves damage to nearby buildings','',''],stank:['Invisible until it fires or is spotted','',''],rift:['Teleports nearby squads','',''],eng:['Captures buildings','',''],spike:['Generates income when captured','',''],radar:['Reveals the area when captured','',''],sniper:['Long-range marksman','Infantry','Tanks · Buildings'],buggy:['Fast raider','Infantry','Tanks'],arty:['Long-range siege gun','Buildings · Infantry','Fast units'],
-  guard:['Anti-infantry tower','Infantry','Tanks'],missile:['Anti-armor tower','Vehicles','Infantry'],tech:['Unlocks advanced units','',''],
-  rifle:['Assault infantry','Infantry','Tanks · Buildings'],rocket:['Anti-armor infantry','Tanks · Buildings','Infantry'],
+const ROLE={gren:['Heavy trooper, area damage','Infantry · Buildings','Tanks'],htank:['Slow twin-cannon heavy tank','Tanks · Buildings','Infantry'],mlrs:['Long-range missile carrier','Tanks · Aircraft','Infantry'],shield:['Halves damage to nearby buildings','',''],stank:['Invisible until it fires or is spotted','',''],rift:['Teleports nearby squads','',''],eng:['Captures buildings','',''],spike:['Generates income when captured','',''],radar:['Reveals the area when captured','',''],sniper:['Long-range marksman','Infantry','Tanks · Buildings'],buggy:['Fast raider','Infantry','Tanks'],arty:['Long-range siege gun','Buildings · Infantry','Fast units'],
+  guard:['Anti-infantry tower','Infantry','Tanks'],missile:['Anti-armor, anti-air tower','Vehicles · Aircraft','Infantry'],tech:['Unlocks advanced units','',''],
+  rifle:['Assault infantry','Infantry','Tanks · Buildings'],rocket:['Anti-armor and anti-air infantry','Tanks · Aircraft','Infantry'],
   tank:['Fast, cheap light tank','Tanks · Buildings','Infantry'],harv:['Crystal harvester','',''],yard:['Command center','',''],
   power:['Generates 100 power','',''],refinery:['Turns crystal into credits','',''],barracks:['Trains infantry','',''],
-  factory:['Builds and repairs vehicles','',''],turret:['Base defense','Vehicles','']};
+  factory:['Builds and repairs vehicles','',''],turret:['Base defense','Vehicles',''],
+  airfield:['Builds, re-arms and repairs aircraft','',''],gunship:['Hovering chain-gun gunship','Infantry · Light vehicles','Rocket troops · Missiles'],bomber:['Two-bomb strike jet','Buildings · Tanks','Rocket troops · Missiles']};
 let selKey='',selRefs=[];
 let selBarOn=false,selBarOff='';
 function updSel(){
   const chip=$('#selChip'),bar=$('#selBar'),list=sel.filter(e=>!e.dead&&e.side===ME);chip.hidden=true;
   if(!list.length||state!=='play'){bar.hidden=true;selBarOn=false;selKey='';selBarOff='';return}
-  const one=list.length===1?list[0]:null,pc=one&&one.k==='b'&&(one.type==='barracks'||one.type==='factory')?(one.type==='barracks'?'i':'v'):null;
+  const one=list.length===1?list[0]:null,pc=one&&one.k==='b'?({barracks:'i',factory:'v',airfield:'a'})[one.type]||null:null;
   const us=list.filter(e=>e.k==='u'),bs=list.filter(e=>e.k==='b'),key=list.map(e=>e.id).join(',');
   if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else if(bs.length&&DESK)buildBldBar(bs[0]);else selRefs=[]}
   selBarOn=(us.length>0||(bs.length>0&&DESK))&&selBarOff!==key&&!place;bar.hidden=!selBarOn;
@@ -178,7 +181,7 @@ function buildSelBar(us){
 /* a selected structure: picture, what it does, health, status, Repair / Sell; production buildings show their queue */
 function buildBldBar(b){
   const sp=$('#selBar');selRefs=[];sp.classList.remove('sbTiles');sp.style.width='';
-  const d=BDEF[b.type],ro=ROLE[b.type]||[''],own=b.side===ME,canSell=own&&!d.cap&&b.type!=='yard',prod=b.type==='barracks'||b.type==='factory';
+  const d=BDEF[b.type],ro=ROLE[b.type]||[''],own=b.side===ME,canSell=own&&!d.cap&&b.type!=='yard',prod=b.type==='barracks'||b.type==='factory'||b.type==='airfield';
   const fight=d.dmg?`<div class="sbRow"><span class="lbl">Range</span><span class="sbV">${d.range} tiles</span></div><div class="sbRow"><span class="lbl">Damage</span><span class="sbV">${d.dmg} every ${d.rof}s</span></div>`:'';
   sp.innerHTML=`<div class="sbOne sbBld"><div class="sbPort"><img alt="" src="${thumb(b.type,skinOf(b.side),220)}"></div>
     <div class="sbInfo"><div class="sbName">${d.name}</div><div class="sbRole">${ro[0]||''}</div>
@@ -220,7 +223,7 @@ function msg(text,kind){
 /* ---------- info card: larger portrait, description and stats for any unit or structure ---------- */
 const DESC={
   rifle:'Cheap, quick-to-train foot soldier. Shreds enemy infantry but barely scratches armour.',
-  rocket:'Shoulder-launched missiles punch through tanks and buildings. Nearly useless against infantry.',
+  rocket:'Shoulder-launched missiles punch through tanks and buildings and bring down aircraft. Nearly useless against infantry.',
   gren:'Heavy trooper with a grenade launcher. Slow and tough, its blasts hit groups of infantry and structures.',
   sniper:'Long-range marksman. Picks off infantry from far outside their reach. Fragile up close.',
   eng:'Unarmed specialist. Walks into an enemy or neutral building to capture it for your side.',
@@ -228,7 +231,7 @@ const DESC={
   tank:'Fast, cheap light tank. Good all-round armour hunter that can also hit buildings.',
   htank:'Slow, heavily armed twin-cannon tank. Crushes armour and bases; keep infantry away from it.',
   stank:'Syndicate tank that stays invisible until it fires or an enemy comes close.',
-  mlrs:'Fires long-range missile volleys that wreck tanks and buildings. Lightly armoured.',
+  mlrs:'Fires long-range missile volleys that wreck tanks and buildings and shoot down aircraft. Lightly armoured.',
   buggy:'Very fast raider with a rapid-fire gun. Hunts infantry and scouts the map.',
   arty:'Long-range siege gun. Its shells splash over an area. Needs protection.',
   harv:'Gathers crystal from fields and brings it to a Refinery for credits.',
@@ -240,7 +243,10 @@ const DESC={
   tech:'Unlocks advanced units and defenses: Marksman, Heavy Tank, Siege Artillery, Missile Tower and the Vanguard Shield Generator. Limit one.',
   turret:'Cannon emplacement. Strong against vehicles.',
   guard:'Machine-gun tower. Strong against infantry.',
-  missile:'Missile launcher tower. Hits vehicles hard from long range.',
+  missile:'Missile launcher tower. Hits vehicles hard from long range and shoots down aircraft.',
+  airfield:'Builds aircraft. Bombers land on its two pads to re-arm and repair, so each Airfield supports two bombers.',
+  gunship:'Hovering gunship with a rotary chain gun. Flies over anything and shreds infantry. Only rocket weapons can hit it.',
+  bomber:'Strike jet. Order it onto a target: it drops two heavy bombs, flies home to re-arm, then goes back. Only rocket weapons can hit it in the air.',
   shield:'Vanguard generator that halves damage to nearby buildings.',
   spike:'Neutral crystal spike. Capture it with an Engineer for steady income.',
   radar:'Neutral radar tower. Capture it with an Engineer to reveal the area around it.'};

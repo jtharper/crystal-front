@@ -56,6 +56,7 @@ const SFX={
     nz(t,.035,'highpass',3600,1500,1,0,d);nz(t,.75,'lowpass',4200,150,1.1,.7,d);tn(t,.6,'sine',105,28,1.35,d);tn(t,.2,'triangle',250,85,.35,d);
     nz(t+.1,1.1,'lowpass',650,55,.38,0,d);tn(t+.34,.07,'square',2350,2300,.035,d);tn(t+.35,.14,'triangle',3300,3200,.05,d)},
   arty:(t,v,p)=>{const d=dst(v,p,.7);nz(t,.05,'highpass',2600,1200,1,0,d);nz(t,1.2,'lowpass',3000,70,1.2,.6,d);tn(t,.9,'sine',75,22,1.5,d);nz(t+.15,1.6,'lowpass',450,40,.45,0,d)},
+  drop:(t,v,p)=>{const d=dst(v,p,.3);tn(t,.55,'sine',1400,520,.18,d);nz(t,.5,'bandpass',900,400,.12,.4,d)},
   rocket:(t,v,p)=>{const d=dst(v,p,.4);nz(t,.04,'highpass',3000,1500,.55,0,d);tn(t,.06,'sine',210,80,.4,d);nz(t+.02,.95,'bandpass',500,2600,.5,1.1,d);nz(t+.02,.9,'lowpass',1300,260,.32,0,d)},
   hit:(t,v,p)=>{const d=dst(v,p,.15);nz(t,.05,'bandpass',2600+Math.random()*1200,1700,.22,3,d);tn(t,.04,'triangle',1700+Math.random()*900,1100,.05,d)},
   boomSmall:(t,v,p)=>{const d=dst(v,p,.55);nz(t,.04,'highpass',2500,1200,.8,0,d);nz(t,.85,'lowpass',2600,85,1,.6,d);tn(t,.55,'sine',85,26,1.15,d);
@@ -72,7 +73,7 @@ const SFX={
   win:(t)=>{const d=dst(.7,0,.3);[392,494,587,784].forEach((f,i)=>tn(t+i*.16,.4,'triangle',f,f,.3,d))},
   lose:(t)=>{const d=dst(.7,0,.3);tn(t,.9,'sawtooth',300,70,.3,d)}
 };
-const MINI={laser:.06,lrocket:.1,lorb:.12,lbeam:.12,gren:.1,rifle:.07,mg:.14,snipe:.1,tank:.08,arty:.15,rocket:.1,hit:.05,boomSmall:.06,boomBig:.2,click:.03,ack:.08,radio:.3};
+const MINI={drop:.3,laser:.06,lrocket:.1,lorb:.12,lbeam:.12,gren:.1,rifle:.07,mg:.14,snipe:.1,tank:.08,arty:.15,rocket:.1,hit:.05,boomSmall:.06,boomBig:.2,click:.03,ack:.08,radio:.3};
 /* announcer voice (browser speech synthesis) */
 let annV=null;const annLast={};
 function pickVoice(){if(!('speechSynthesis' in window))return null;const vs=speechSynthesis.getVoices();if(!vs||!vs.length)return null;

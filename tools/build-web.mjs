@@ -19,7 +19,7 @@ for (const d of ['css', 'js', 'tex']) fs.cpSync(rel(d), path.join(OUT, d), { rec
 
 // --- models: only what the game references ---
 let glb = fs.readFileSync(rel('js', 'glb.js'), 'utf8');
-const refs = [...new Set([...glb.matchAll(/'models\/([a-z0-9_]+\.(?:json|jpg))'/g)].map(m => m[1]))];
+const refs = [...new Set([...glb.matchAll(/'models\/([A-Za-z0-9_]+\.(?:json|jpg))'/g)].map(m => m[1]))];
 let bytes = 0;
 for (const f of refs) {
   const src = rel('models', f);
@@ -37,7 +37,7 @@ for (const f of refs) {
   const out = Buffer.concat([head, jh, js, bh, bn]);
   fs.writeFileSync(path.join(OUT, 'models', f.replace(/\.json$/, '.glb')), out); bytes += out.length;
 }
-glb = glb.replace(/'models\/([a-z0-9_]+)\.json'/g, "'models/$1.glb'");
+glb = glb.replace(/'models\/([A-Za-z0-9_]+)\.json'/g, "'models/$1.glb'");
 fs.writeFileSync(path.join(OUT, 'js', 'glb.js'), glb);
 
 // --- build id: both online players must run the same game code (a hash of every script) ---

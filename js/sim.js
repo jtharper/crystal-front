@@ -3,6 +3,7 @@
 function addUnit(type,side,x,y){
   const d=UDEF[type];
   const u={id:nid++,k:'u',type,side,x,y,hp:d.hp,mhp:d.hp,ang:rng()*6.28,tang:0,path:null,pi:0,atk:null,cool:0,amove:null,cargo:0,hold:false,rep:0,flash:0,scan:rng()*.3,cand:null,hs:'seek',ref:null};
+  if(d.air){u.air=true;u.alt=0;u.v=0;u.ammo=d.ammo||0;u.padI=-1;u.home=null;u.dest=null;u.as='fly'}
   u.tang=u.ang;units.push(u);return u;
 }
 function dims(t,rot){const d=BDEF[t];return rot&1?{w:d.h,h:d.w}:{w:d.w,h:d.h}}
@@ -34,7 +35,7 @@ function edgeDist(u,t){
 }
 function nearestEnemy(e,r){
   let best=null,bd=r;
-  for(const o of units){if(o.dead||!enemy(e.side,o.side)||o.cloaked)continue;const d=Math.hypot(o.x-e.x,o.y-e.y)-8;if(d<bd){bd=d;best=o}}
+  for(const o of units){if(o.dead||!enemy(e.side,o.side)||o.cloaked||!canHit(e,o))continue;const d=Math.hypot(o.x-e.x,o.y-e.y)-8;if(d<bd){bd=d;best=o}}
   for(const o of blds){if(o.dead||!enemy(e.side,o.side)||BDEF[o.type].cap)continue;const d=edgeDist(e,o)+20;if(d<bd){bd=d;best=o}}
   return best;
 }
@@ -50,14 +51,15 @@ function hurt(e,dmg,from){
       if(time-lastAlert>3){lastAlert=time;showAlert();sfx('alert');say(e.k==='b'?'Our base is under attack':'Unit under attack','attack',14)}fxs.push({t:'ping',x:e.x,y:e.y,age:0,life:1.2,r:60,col:'#ff5b44'})}
   }
   if(e.hp<=0){kill(e);return}
-  if(e.k==='u'&&from&&!from.dead&&!e.atk&&!e.path&&UDEF[e.type].dmg)e.atk=from;
+  if(e.k==='u'&&from&&!from.dead&&!e.atk&&!e.path&&!e.dest&&UDEF[e.type].dmg&&UDEF[e.type].wt!=='bomb'&&canHit(e,from))e.atk=from;
 }
 function kill(e){
   e.dead=true;if(e.q&&e.q.length)sides[e.side].credits+=e.q.reduce((a,i)=>a+i.paid,0);sfx(e.k==='b'?'boomBig':'boomSmall',e.x,e.y);
   if(e.k==='b'){
     for(let y=e.ty;y<e.ty+e.h;y++)for(let x=e.tx;x<e.tx+e.w;x++)occ[y*MW+x]=0;
     for(let i=0;i<5+e.w*e.h;i++)fxs.push({t:'boom',x:e.x+(rng()-.5)*e.w*T,y:e.y+(rng()-.5)*e.h*T,age:-rng()*.6,life:.7,r:18+rng()*18});
-  }else fxs.push({t:'boom',x:e.x,y:e.y,age:0,life:.5,r:e.type==='tank'||e.type==='harv'||e.type==='htank'||e.type==='mlrs'?(e.type==='htank'?32:26):14});
+  }else if(e.air&&e.alt>8){for(let i=0;i<3;i++)fxs.push({t:'boom',x:e.x+(rng()-.5)*20,y:e.y+(rng()-.5)*20,h:e.alt+(rng()-.5)*10,age:-rng()*.2,life:.6,r:20})}
+  else fxs.push({t:'boom',x:e.x,y:e.y,age:0,life:.5,r:e.air?24:e.type==='tank'||e.type==='harv'||e.type==='htank'||e.type==='mlrs'?(e.type==='htank'?32:26):14});
 }
 
 /* ---------- pathfinding ---------- */
@@ -110,7 +112,7 @@ function openSpot(x,y,u,taken){
   const r0=sepR(u),step=Math.max(14,r0*2.1);
   const clear=(px,py)=>{if(px<T||py<T||px>WW-T||py>WH-T)return false;const i=ti(px,py);if(occ[i]||ter[i]===2)return false;
     for(const [ax,ay] of [[-r0*.7,0],[r0*.7,0],[0,-r0*.7],[0,r0*.7]])if(occ[ti(px+ax,py+ay)])return false;
-    for(const o of units){if(o===u||o.dead||o.docked)continue;const g=goalOf(o),m=r0+sepR(o);if(Math.abs(g.x-px)<m&&Math.abs(g.y-py)<m&&Math.hypot(g.x-px,g.y-py)<m)return false}
+    for(const o of units){if(o===u||o.dead||o.docked||o.air)continue;const g=goalOf(o),m=r0+sepR(o);if(Math.abs(g.x-px)<m&&Math.abs(g.y-py)<m&&Math.hypot(g.x-px,g.y-py)<m)return false}
     if(taken)for(const t of taken)if(Math.hypot(t.x-px,t.y-py)<r0+t.r)return false;return true};
   if(clear(x,y))return {x,y};
   for(let ring=1;ring<9;ring++){const n=Math.max(6,Math.round(ring*6.3)),a0=rng()*6.28;
@@ -147,7 +149,7 @@ function capture(b,u){
   if(u.side===ME){msg(BDEF[b.type].name+' captured','ok');say(b.type==='spike'?'Crystal spike captured':b.type==='radar'?'Radar tower captured':'Building captured','cap',1)}
   else if(old===0){msg(BDEF[b.type].name+' lost to the enemy','bad');say('Building lost','cap',1)}
 }
-function isProd(b){return b&&b.k==='b'&&b.side===ME&&!b.dead&&(b.type==='barracks'||b.type==='factory')}
+function isProd(b){return b&&b.k==='b'&&b.side===ME&&!b.dead&&(b.type==='barracks'||b.type==='factory'||b.type==='airfield')}
 function setRally(b,sx,sy){const w=screenToWorld(sx,sy);if(!w)return;issue({c:'rally',b:b.id,x:r1(w.x),y:r1(w.y)});ping(w.x,w.y,'#ffd27a');fxs.push({t:'ping',x:w.x,y:w.y,age:0,life:.9,r:40,col:'#ffd27a'});sfx('ack');msg('Rally point set','ok')}
 function riftAt(sx,sy){
   const w=screenToWorld(sx,sy);if(!w)return;
@@ -158,7 +160,7 @@ function riftAt(sx,sy){
   issue({c:'rift',r:rw.id,x:r1(w.x),y:r1(w.y)});
 }
 function riftJump(rw,wx,wy){
-  const sq=units.filter(u=>!u.dead&&u.side===rw.side&&u.type!=='harv'&&Math.hypot(u.x-rw.x,u.y-rw.y)<T*4.2);
+  const sq=units.filter(u=>!u.dead&&u.side===rw.side&&u.type!=='harv'&&!u.air&&Math.hypot(u.x-rw.x,u.y-rw.y)<T*4.2);
   for(const u of sq)fxs.push({t:'ping',x:u.x,y:u.y,age:0,life:.7,r:22,col:'#9fffd8'});
   groupDests(sq,wx,wy);
   for(const u of sq){relDock(u);u.x=u._dx;u.y=u._dy;u.path=null;u.atk=null;u.amove=null;u.cap=null;u.rally=null;fxs.push({t:'flash',x:u.x,y:u.y,age:0,life:.3,r:14})}
@@ -174,12 +176,12 @@ function updEng(u,dt){
 }
 function updCombat(u,dt){
   const d=UDEF[u.type];if(d.eng){updEng(u,dt);return}
-  if(u.atk&&(u.atk.dead||u.atk.cloaked))u.atk=null;
+  if(u.atk&&(u.atk.dead||u.atk.cloaked||!canHit(u,u.atk)))u.atk=null;
   let tg=u.atk;
   if(!tg&&(!u.path||u.amove)){
     u.scan-=dt;
     if(u.scan<=0){u.scan=.2+rng()*.1;u.cand=nearestEnemy(u,d.range*T*hiScan(u)+(u.path?0:2*T))}
-    if(u.cand&&!u.cand.dead)tg=u.cand;else u.cand=null;
+    if(u.cand&&!u.cand.dead&&canHit(u,u.cand))tg=u.cand;else u.cand=null;
   }
   if(tg){
     const dist=edgeDist(u,tg),want=Math.atan2(tg.y-u.y,tg.x-u.x);
@@ -202,25 +204,25 @@ function updCombat(u,dt){
 /* muzzle offsets in model space: [forward, height, side], an entry may be per faction [Vanguard,Syndicate,Helix] */
 const MUZ={rifle:[11,10,1.2],rift:[11,10,1.2],rocket:[10,[14,14,12.6],3.6],gren:[8.5,10,1.2],sniper:[[20,27,19],10.2,1.2],
   tank:[[32,40.7,49.1],[16.2,18.1,17.6],[0,3,0]],htank:[[37.6,49.2,51.5],[19.6,20.4,20.4],[4.3,4.2,3.8]],mlrs:[[2,-.2,-3],[22,22.3,26.6],[3,1.4,2.8]],buggy:[[9.2,10.6,1.8],[13.6,16.7,16.6],[0,0,2.5]],arty:[[30,35,35.8],[27,28.8,29.1],0],stank:[26.1,16,1.6],
-  turret:[16,22,0],guard:[12,24,0],missile:[10,22,0]};
+  turret:[16,22,0],guard:[12,24,0],missile:[10,22,0],gunship:[27,-1,0],bomber:[0,-4,0]};
 const pick3=(v,st)=>Array.isArray(v)?v[st]:v;
 function muzzle(a,k){const st=Math.max(0,facOf(a.side)),M=MUZ[a.type]||[10,12,0],f=pick3(M[0],st),h=pick3(M[1],st),sd=pick3(M[2],st)*(k?-1:1);
-  const c=Math.cos(a.tang),s=Math.sin(a.tang);return {x:a.x+c*f-s*sd,y:a.y+s*f+c*sd,h}}
-const aimH=t=>t.k==='b'?(BTOP[t.type]||30)*.4:(UTOP[t.type]||20)*.45;
+  const c=Math.cos(a.tang),s=Math.sin(a.tang);return {x:a.x+c*f-s*sd,y:a.y+s*f+c*sd,h:h+(a.alt||0)}}
+const aimH=t=>t.k==='b'?(BTOP[t.type]||30)*.4:(t.alt||0)+(UTOP[t.type]||20)*.45;
 /* Helix fires energy weapons; the other factions fire tracers, shells and smoke-trailing missiles */
 function shoot(a,tg,d){
   if(a.k==='u'&&UDEF[a.type].stealth)a.revealT=2.6;
   const laser=facOf(a.side)===2,wt=d.wt,col=COLORS[sides[a.side].col].ge,two=a.type==='htank'||a.type==='mlrs';
   const beam=laser&&(wt==='cannon'||wt==='tcannon'||wt==='snipe');
-  if(laser)sfx(beam?'lbeam':wt==='bullet'?'laser':wt==='rocket'?'lrocket':wt==='grenade'||wt==='shell'?'lorb':'laser',a.x,a.y);
-  else sfx(wt==='snipe'?'snipe':wt==='bullet'?(a.type==='buggy'||a.type==='guard'?'mg':'rifle'):wt==='rocket'?'rocket':wt==='shell'?'arty':wt==='grenade'?'gren':'tank',a.x,a.y);
+  if(laser)sfx(beam?'lbeam':wt==='bullet'||wt==='chain'?'laser':wt==='rocket'?'lrocket':wt==='grenade'||wt==='shell'?'lorb':'laser',a.x,a.y);
+  else sfx(wt==='snipe'?'snipe':wt==='chain'?'mg':wt==='bullet'?(a.type==='buggy'||a.type==='guard'?'mg':'rifle'):wt==='rocket'?'rocket':wt==='shell'?'arty':wt==='grenade'?'gren':'tank',a.x,a.y);
   const th=aimH(tg);
   for(let k=0;k<(two?2:1);k++){
-    const m=muzzle(a,k),sp=d.psp*(beam?5:laser&&(wt==='bullet'||wt==='rocket')&&a.type!=='mlrs'?1.8:1)*(k?.94:1);
+    const m=muzzle(a,k),sp=d.psp*(beam?5:laser&&(wt==='bullet'||wt==='chain'||wt==='rocket')&&a.type!=='mlrs'?1.8:1)*(k?.94:1);
     projs.push({x:m.x,y:m.y,px:m.x,py:m.y,x0:m.x,y0:m.y,h0:m.h,h1:th,tgt:tg,dmg:two?d.dmg/2:d.dmg,wt,sp,side:a.side,src:a,n:0,laser,beam,col,loft:a.type==='mlrs',
       d0:Math.max(1,Math.hypot(tg.x-m.x,tg.y-m.y))});
     if(beam)fxs.push({t:'beam',x:m.x,y:m.y,h:m.h,x1:tg.x,y1:tg.y,h1:th,col,w:wt==='snipe'?1.1:a.type==='htank'?2.2:1.7,age:0,life:wt==='snipe'?.2:.24});
-    if(wt!=='bullet'||laser)fxs.push({t:'flash',x:m.x,y:m.y,h:m.h,col:laser?col:null,age:0,life:laser?.1:.12,r:a.type==='htank'||wt==='cannon'?9:wt==='bullet'?3:6});
+    if((wt!=='bullet'&&wt!=='chain')||laser)fxs.push({t:'flash',x:m.x,y:m.y,h:m.h,col:laser?col:null,age:0,life:laser?.1:.12,r:a.type==='htank'||wt==='cannon'?9:wt==='bullet'?3:6});
     else fxs.push({t:'flash',x:m.x,y:m.y,h:m.h,age:0,life:.06,r:3});
     if(!laser&&(wt==='cannon'||wt==='tcannon'||wt==='shell'))fxs.push({t:'puff',x:m.x,y:m.y,h:m.h,age:0,life:.7,r:wt==='shell'?9:7});
     if(!laser&&a.type==='mlrs')fxs.push({t:'puff',x:m.x,y:m.y,h:m.h-4,age:0,life:1,r:10});
@@ -283,6 +285,7 @@ function updHarv(u,dt){
 }
 function updUnit(u,dt){
   u.flash=Math.max(0,u.flash-dt);u.cool-=dt;if(u.exitT>0)u.exitT-=dt;if(u.rcd>0)u.rcd-=dt;
+  if(u.air){updAir(u,dt);return}
   if(UDEF[u.type].stealth){u.revealT=Math.max(0,(u.revealT||0)-dt);u.scanC=(u.scanC||0)-dt;
     if(u.scanC<=0){u.scanC=.3;u.near=units.some(o=>!o.dead&&enemy(o.side,u.side)&&Math.hypot(o.x-u.x,o.y-u.y)<T*2.6)||blds.some(b=>!b.dead&&enemy(b.side,u.side)&&edgeDist(u,b)<T*1.6)}
     u.cloaked=u.revealT<=0&&!u.near}
@@ -299,14 +302,14 @@ function updTurret(b,dt){
   const d=BDEF[b.type];b.flash=Math.max(0,b.flash-dt);b.cool-=dt;
   if(sides[b.side].low)return;
   b.scan-=dt;if(b.scan<=0){b.scan=.25;b.cand=nearestEnemy(b,d.range*T*hiScan(b))}
-  const tg=b.cand;if(!tg||tg.dead||tg.cloaked){b.cand=null;return}
+  const tg=b.cand;if(!tg||tg.dead||tg.cloaked||!canHit(b,tg)){b.cand=null;return}
   const want=Math.atan2(tg.y-b.y,tg.x-b.x);b.tang=turn(b.tang,want,dt*6);
   if(b.cool<=0&&Math.abs(angd(b.tang,want))<.25&&edgeDist(b,tg)<=d.range*T*hiMul(b,tg)){b.cool=d.rof;shoot(b,tg,d)}
 }
 function separate(){
   const n=units.length;
-  for(let i=0;i<n;i++){const a=units[i];if(a.dead||a.docked||a.exitT>0)continue;
-    for(let j=i+1;j<n;j++){const b=units[j];if(b.dead||b.docked||b.exitT>0)continue;
+  for(let i=0;i<n;i++){const a=units[i];if(a.dead||a.docked||a.exitT>0||a.air)continue;
+    for(let j=i+1;j<n;j++){const b=units[j];if(b.dead||b.docked||b.exitT>0||b.air)continue;
       const dx=b.x-a.x,dy=b.y-a.y,m=(a.path||b.path)?UDEF[a.type].r+UDEF[b.type].r-2:(sepR(a)+sepR(b))*.85;
       if(Math.abs(dx)>m||Math.abs(dy)>m)continue;
       const d2=dx*dx+dy*dy;if(d2>=m*m)continue;
@@ -315,30 +318,32 @@ function separate(){
       if(!occ[ti(b.x+ux,b.y+uy)]){b.x+=ux;b.y+=uy}
     }
   }
+  separateAir();
 }
 
 /* ---------- economy ---------- */
 const has=(s,t)=>blds.some(b=>b.side===s.id&&b.type===t&&!b.dead);
 /* building limits: structures with max (Tech Center) count built, queued and ready-to-place copies */
-function atCap(s,t){const d=BDEF[t];if(!d||!d.max)return false;const c=CAT[t];
+function atCap(s,t){if(t==='bomber')return bomberRoom(s)<=0;const d=BDEF[t];if(!d||!d.max)return false;const c=CAT[t];
   let n=blds.filter(b=>b.side===s.id&&b.type===t&&!b.dead).length;if(s[RD(c)]===t)n++;if(s.q[c]&&s.q[c].some(i=>i.t===t))n++;return n>=d.max}
 function canBuild(s,t){
   const c=CAT[t];if(def(t).fac!=null&&s.fac!==def(t).fac)return false;if(atCap(s,t))return false;
   if(c==='i'&&!has(s,'barracks'))return false;
   if(c==='v'&&!has(s,'factory'))return false;
+  if(c==='a'&&!has(s,'airfield'))return false;
   const d=def(t);if(d.req&&!(SANDBOX&&s.id===0))for(const r of d.req)if(!has(s,r))return false;
   return true;
 }
 /* each Barracks / War Factory has its own queue and they build in parallel */
-function prods(s,c){const pt=c==='i'?'barracks':'factory';return blds.filter(b=>b.side===s.id&&b.type===pt&&!b.dead).sort((a,b)=>a.id-b.id)}
+function prods(s,c){const pt=c==='i'?'barracks':c==='a'?'airfield':'factory';return blds.filter(b=>b.side===s.id&&b.type===pt&&!b.dead).sort((a,b)=>a.id-b.id)}
 function prodQ(b){return b.q||(b.q=[])}
 function qAll(s,c){let a=[];for(const p of prods(s,c))a=a.concat(prodQ(p));return a}
-const prodSel={i:null,v:null};
+const prodSel={i:null,v:null,a:null};
 function curProd(c){const ps=sides?prods(sides[ME],c):[];return ps.find(b=>b.id===prodSel[c])||ps[0]||null}
 function enqueue(s,t,pb){
   const c=CAT[t];
   if(!canBuild(s,t))return false;
-  if(c==='i'||c==='v'){
+  if(c==='i'||c==='v'||c==='a'){
     const ps=prods(s,c);if(!ps.length)return false;
     const p=pb&&!pb.dead?pb:ps.reduce((a,b)=>prodQ(b).length<prodQ(a).length?b:a);
     const q=prodQ(p);if(q.length>=6)return false;q.push({t,prog:0,paid:0});return true;
@@ -347,6 +352,7 @@ function enqueue(s,t,pb){
   q.push({t,prog:0,paid:0});return true;
 }
 function spawnUnit(s,t,pp){
+  if(CAT[t]==='a'){const p=pp&&!pp.dead?pp:airfieldsOf(s.id)[0];return p?spawnAir(s,t,p):false}
   const pt=CAT[t]==='i'?'barracks':'factory';
   const p=pp&&!pp.dead?pp:blds.find(b=>b.side===s.id&&b.type===pt&&!b.dead);
   if(!p)return false;
@@ -371,7 +377,7 @@ function tickProd(s,dt){
     }
   };
   run(s.q.b,'b');run(s.q.d,'d');
-  for(const c of ['i','v'])for(const p of prods(s,c))run(prodQ(p),c,p);
+  for(const c of ['i','v','a'])for(const p of prods(s,c))run(prodQ(p),c,p);
 }
 function validPlace(sid,t,tx,ty,margin,rot){
   const d=dims(t,rot||0);margin=margin||0;

@@ -434,6 +434,7 @@ function startDeath(r){
   {const dl=[];r.g.traverse(o=>{if(o.name==='dome')dl.push(o)});for(const o of dl)o.parent.remove(o)}
   const d={g:r.g,e,t:0,k:e.k,type:e.type,fall:vr()<.5?1:-1,tilt:(vr()-.5)*.35,tur:null,y0:r.g.position.y,x0:r.g.position.x,z0:r.g.position.z};
   if(e.k==='b')bldRubble(r,d);else r.g.traverse(o=>{if(o.isMesh)o.material=MT.char});
+  if(e.air&&e.alt>8){d.air=true;const sp=(e.v||0)*.7;d.vx=Math.cos(e.ang)*sp;d.vz=Math.sin(e.ang)*sp;d.vy=0;d.spin=(vr()-.5)*5;d.roll=(vr()<.5?-1:1)*(1.5+vr());dying.push(d);return}
   if(e.k==='u'){
     if(e.type==='tank'||e.type==='harv'||e.type==='htank'||e.type==='mlrs'){
       if(r.turret){const t=r.turret;entGroup.attach(t);d.tur={m:t,vx:(vr()-.5)*50,vz:(vr()-.5)*50,vy:130+vr()*60,sp:(vr()-.5)*10}}
@@ -448,6 +449,13 @@ function updDying(dt){
   for(let i=dying.length-1;i>=0;i--){
     const d=dying[i],g=d.g;d.t+=dt;
     const rm=()=>{entGroup.remove(g);g.traverse(o=>{if(o.userData.decal)o.geometry.dispose()});for(const o of d.pads||[]){entGroup.remove(o);o.geometry.dispose()}if(d.tur)entGroup.remove(d.tur.m);dying.splice(i,1)};
+    if(d.air){const gy=hAt(g.position.x,g.position.z);
+      if(!d.down){d.vy-=260*dt;g.position.x+=d.vx*dt;g.position.y+=d.vy*dt;g.position.z+=d.vz*dt;g.rotation.y+=d.spin*dt;g.rotation.x+=d.roll*dt*.6;g.rotation.z-=dt*.5;
+        if(vr()<dt*30)fxs.push({t:'smoke',x:g.position.x,y:g.position.z,h:g.position.y-gy,age:0,life:1.2,r:7});
+        if(g.position.y<=gy+2){d.down=d.t;g.position.y=gy+2;fxs.push({t:'boom',x:g.position.x,y:g.position.z,age:0,life:.7,r:30});fxs.push({t:'smoke',x:g.position.x,y:g.position.z,age:0,life:2,r:16});sfx('boomSmall',g.position.x,g.position.z);
+          spawnDebris(g.position.x,gy+6,g.position.z,7,110,4,[MT.char,MT.steel])}}
+      else{if(d.t-d.down<4&&vr()<dt*6)fxs.push({t:'smoke',x:g.position.x,y:g.position.z,age:0,life:1.2,r:8});if(d.t-d.down>5)g.position.y-=dt*5;if(d.t-d.down>8||d.t>14)rm()}
+      continue}
     if(d.k==='u'){
       if(d.type==='tank'||d.type==='harv'||d.type==='htank'||d.type==='mlrs'){
         g.rotation.z=d.tilt*Math.min(1,d.t*3);
@@ -482,6 +490,25 @@ function aoInit(){const c=document.createElement('canvas');c.width=c.height=64;c
   aoM=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,color:0x000000,opacity:.42,fog:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}),700);
   aoM.frustumCulled=false;aoM.renderOrder=1;aoM.count=0;scene.add(aoM)}
 function aoAdd(x,y,z,sx,sz,ang){if(aoN>=700)return;_q.setFromEuler(_e.set(0,ang||0,0));_m.compose(_p.set(x,y,z),_q,_s.set(sx,1,sz));aoM.setMatrixAt(aoN++,_m)}
+/* aircraft: altitude, banking into turns, nose-down when a gunship moves, spinning rotors, gear and bombs shown as needed */
+function syncAir(r,e,mv,now){
+  const ud=UDEF[e.type],gy=gH(e.x,e.y),bomber=e.type==='bomber';let base=gy;
+  const h=e.home;if(h&&!h.dead&&Math.hypot(e.x-h.x,e.y-h.y)<T*2.6)base=Math.max(gy,footY(h)+1.1);
+  const fl=Math.min(1,e.alt/24),y=base+e.alt+(bomber?0:Math.sin(now*2.2+e.id)*1.3*fl);
+  r.g.position.set(e.x,y,e.y);r.g.rotation.y=-e.ang;
+  const da=r.pa===undefined?0:angd(r.pa,e.ang),rate=fdt>0?da/fdt:0;r.pa=e.ang;
+  const spd=fdt>0?mv/fdt:0,k=Math.min(1,fdt*4);
+  r.bank=(r.bank||0)+(Math.max(-.75,Math.min(.75,rate*(bomber?.42:.3)))*fl-(r.bank||0))*k;
+  const dAlt=r.palt===undefined?0:(e.alt-r.palt)/Math.max(fdt,1e-3);r.palt=e.alt;
+  const pt=bomber?Math.max(-.25,Math.min(.25,dAlt*.006)):-Math.min(.26,spd/ud.speed*.24)*fl;
+  r.pitch=(r.pitch||0)+(pt-(r.pitch||0))*k;
+  if(r.air){r.air.rotation.order='YZX';r.air.rotation.x=r.bank;r.air.rotation.z=r.pitch}
+  const spin=bomber?0:(e.alt>2||state==='play'?28:6);if(r.rotL){r.rotL.rotation.y+=fdt*spin;r.rotR.rotation.y-=fdt*spin}
+  if(r.bombs)r.bombs.visible=e.ammo>0;if(r.gear)r.gear.visible=e.alt<22;
+  {const d=ud.r*2.6*(1-.45*fl);aoAdd(e.x,gy+.6,e.y,d*1.4,d,-e.ang)}
+  if(state==='play'&&fdt>0&&e.alt>1&&e.alt<26&&vr()<fdt*10)fxs.push({t:'dust',x:e.x+(vr()-.5)*24,y:e.y+(vr()-.5)*24,h:1,age:0,life:.9,r:7});
+  if(state==='play'&&bomber&&fl>.5&&vr()<fdt*14){const c=Math.cos(e.ang),s=Math.sin(e.ang);fxs.push({t:'puff',x:e.x-c*36,y:e.y-s*36,h:y-gy+8,age:0,life:.5,r:3})}
+}
 function syncEntities(){
   const alive=new Set();if(!aoM&&renderer)aoInit();aoN=0;
   updDying(fdt);updDebris(fdt);
@@ -493,6 +520,7 @@ function syncEntities(){
     const mv=r.px===undefined?0:Math.hypot(e.x-r.px,e.y-r.py);r.px=e.x;r.py=e.y;
     const moving=fdt>0&&mv/fdt>6;r.mf=(r.mf||0)+((moving?1:0)-(r.mf||0))*Math.min(1,fdt*8);r.ph=(r.ph||0)+mv*.3;
     if(r.c0!==undefined&&e.cool>r.c0+.05)r.rc=1;r.c0=e.cool;r.rc=Math.max(0,(r.rc||0)-fdt*5);
+    if(e.air){syncAir(r,e,mv,now);continue}
     const hover=false;let y=gH(e.x,e.y);
     {const LB=e.docked&&e.ref&&!e.ref.dead?e.ref:(e.exitT>0&&e.exitB&&!e.exitB.dead?e.exitB:null);
       if(LB){const lz=refLz(LB,e.x,e.y),ed=BDEF[LB.type].h*T/2,lift=(LB.type==='barracks'?3:GLB.scene.refinery?.3:3.6)*Math.max(0,Math.min(1,(ed+5-lz)/6));y=Math.max(y,footY(LB)+lift)}}
@@ -575,6 +603,7 @@ const _dir=new THREE.Vector3(),_X=new THREE.Vector3(1,0,0);
 function projLook(p){
   const w=p.wt;
   if(p.beam)return null;
+  if(w==='bomb')return {g:PG.shell,m:MT.dark,s:[5.5,2.6,2.6],trail:.35};
   if(p.laser){
     if(w==='grenade'||w==='shell')return {g:PG.orb,m:boltMat(p.col),s:[1,1,1],glow:9};
     if(p.loft)return {g:PG.bolt,m:boltMat(p.col),s:[15,2.6,2.6],glow:11,lance:true};
@@ -596,6 +625,7 @@ function syncProj(){
     if(!m){const L=projLook(p);if(!L)continue;m=new THREE.Mesh(L.g,L.m);m.scale.set(...L.s);m.userData.L=L;world.add(m);projM.set(p,m)}
     const L=m.userData.L,t=p.tgt,rem=t?Math.hypot(t.x-p.x,t.y-p.y):0,pr=Math.min(1,Math.max(0,1-rem/p.d0));
     let x=p.x,z=p.y,h=p.h0+(p.h1-p.h0)*pr;
+    if(p.bomb)h=p.h0*(1-pr*pr);
     if(p.wt==='shell'||p.wt==='grenade')h+=Math.sin(Math.PI*pr)*p.d0*(p.wt==='grenade'?.3:.35);
     if(p.loft){/* vertical launch: climbs almost straight up, then dives onto the target */
       const e=pr*pr*(3-2*pr);x=p.x0+(p.x-p.x0)*e;z=p.y0+(p.y-p.y0)*e;h+=Math.sin(Math.PI*Math.min(1,pr*1.15))*(70+p.d0*.3)}
@@ -685,7 +715,7 @@ function syncSel(){
     if(e.dead||!seenBy0(e))continue;
     if(e.k==='u'){
       const r=getRing(selRings,ri++);r.material.color.setHex(0x8dff9f);r.material.opacity=.95;r.visible=true;
-      const d=UDEF[e.type].r+5;r.scale.set(d,1,d);r.position.set(e.x,gH(e.x,e.y)+2.5,e.y);
+      const d=UDEF[e.type].r+5;r.scale.set(d,1,d);r.position.set(e.x,e.air?(ents.get(e.id)?ents.get(e.id).g.position.y:gH(e.x,e.y))+2:gH(e.x,e.y)+2.5,e.y);
     }else{
       const g=getSelBox(bi++),hw=e.w*T/2+3,hh=e.h*T/2+3,c=g.children;g.visible=true;g.position.set(e.x,(ents.get(e.id)?ents.get(e.id).g.position.y:0)+3,e.y);
       c[0].scale.set(hw*2,1.2,2);c[0].position.set(0,0,-hh);c[1].scale.set(hw*2,1.2,2);c[1].position.set(0,0,hh);
@@ -789,6 +819,7 @@ function drawOverlay(){
     const rr_=ents.get(e.id),top=(e.k==='u'?(rr_&&rr_.top||20):BTOP[e.type]+6)+(rr_?rr_.g.position.y:0);
     const p=toScreen(e.x,top+4,e.y);if(p.behind)continue;
     const w=e.k==='u'?26:Math.max(34,e.w*T*.55);hpBarO(p.x-w/2,p.y-4,w,Math.max(0,e.hp/e.mhp));
+    if(e.type==='bomber'&&e.side===ME&&s){const am=UDEF.bomber.ammo;for(let i=0;i<am;i++){ox.fillStyle=i<e.ammo?'#ffd27a':'rgba(255,255,255,.25)';ox.fillRect(p.x-w/2+i*7,p.y+3,5,4)}}
   }
   for(const b of blds){
     if(!b.repairing||b.dead||(b.side!==ME&&!visNow(b)))continue;const rr_=ents.get(b.id);
