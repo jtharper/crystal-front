@@ -14,10 +14,10 @@ function aiSide(s,A,dt){
   const toC=[Math.sign(WW/2-yard.x),Math.sign(WH/2-yard.y)];
   /* forward bases: a refinery next to each one, and some of the defenses */
   const posts=blds.filter(b=>b.side===me&&b.type==='outpost'&&!b.dead);
-  const bareP=posts.find(p=>!blds.some(b=>b.side===me&&!b.dead&&b.type==='refinery'&&Math.hypot(b.x-p.x,b.y-p.y)<T*9));
+  const bareP=posts.find(p=>!p.noRef&&!blds.some(b=>b.side===me&&!b.dead&&b.type==='refinery'&&Math.hypot(b.x-p.x,b.y-p.y)<T*9));
   for(const slot of ['ready','readyD'])if(s[slot]){
     const t=s[slot];let ok=false;
-    const P=(t==='refinery'&&bareP)?bareP:(slot==='readyD'&&posts.length&&rng()<.35)?posts[(rng()*posts.length)|0]:null;
+    let P=(t==='refinery'&&bareP)?bareP:(slot==='readyD'&&posts.length&&rng()<.35)?posts[(rng()*posts.length)|0]:null;
     for(let n=0;n<160&&!ok;n++){
       const rot=(rng()*4)|0;
       let bx=yard.x/T+(rng()-.5)*22,by=yard.y/T+(rng()-.5)*22;
@@ -26,10 +26,14 @@ function aiSide(s,A,dt){
       if(P){bx=P.x/T+(rng()-.5)*14;by=P.y/T+(rng()-.5)*14}
       const df=CAT[t]==='d';
       if(validPlace(me,t,Math.round(bx),Math.round(by),df?0:1,rot)){placeBuilding(s,t,Math.round(bx),Math.round(by),rot);s[slot]=null;ok=true}
+      if(n===100&&P){if(t==='refinery')P.noRef=true;P=null}  /* no room by the forward base: build it at home instead */
+      else if(n===60&&!P&&posts.length)P=posts[(rng()*posts.length)|0];  /* home plateau full: use a forward base */
     }
+    /* nowhere to put it at all: refund it so the build queue never stalls */
+    if(!ok){A.stuck=(A.stuck||0)+1;if(A.stuck>20){s.credits+=def(t).cost;s[slot]=null;A.stuck=0}}else A.stuck=0;
   }
   if(!s.q.d.length&&!s.readyD&&has(s,'barracks')&&cnt('turret')+cnt('guard')+cnt('missile')<Math.min(9,2+A.wave*1.5)){
-    const nd=(s.fac===0&&has(s,'tech')&&!cnt('shield'))?'shield':eAir&&has(s,'tech')&&cnt('missile')<3&&rng()<.7?'missile':rng()<.4?'guard':(has(s,'tech')&&rng()<.5)?'missile':'turret';if(s.credits>=def(nd).cost*.4)enqueue(s,nd);
+    const nd=(s.fac===0&&has(s,'tech')&&!cnt('shield'))?'shield':eAir&&has(s,'tech')&&cnt('missile')<3&&rng()<.7?'missile':rng()<.4?'guard':(has(s,'tech')&&rng()<.5)?'missile':'turret';if(s.credits>=Math.min(150,def(nd).cost*.4))enqueue(s,nd);
   }
   if(!s.q.b.length&&!s.ready){
     let nb=null;
@@ -42,15 +46,15 @@ function aiSide(s,A,dt){
     else if(!cnt('airfield')&&A.wave>=2)nb='airfield';
     else if(cnt('barracks')<2)nb='barracks';
     else if(cnt('factory')<2)nb='factory';
-    if(nb&&s.credits>=def(nb).cost*.4)enqueue(s,nb);
+    if(nb&&s.credits>=Math.min(150,def(nb).cost*.4))enqueue(s,nb);
   }
   const harvs=units.reduce((n,u)=>n+(u.side===me&&u.type==='harv'&&!u.dead?1:0),0)+qAll(s,'v').filter(i=>i.t==='harv').length;
-  if(has(s,'factory')&&has(s,'refinery')&&harvs<2+(A.wave>2?1:0)&&qAll(s,'v').length<2*prods(s,'v').length)enqueue(s,'harv');
+  if(has(s,'factory')&&has(s,'refinery')&&harvs<cnt('refinery')+1+(A.wave>2?1:0)&&qAll(s,'v').length<2*prods(s,'v').length)enqueue(s,'harv');
   if(has(s,'barracks')&&qAll(s,'i').length<2*prods(s,'i').length){const r=rng();enqueue(s,s.fac===2&&r<.15?'rift':r<(eAir?.62:.4)?'rocket':r<.55?'gren':has(s,'tech')&&r<.65?'sniper':'rifle')}
   if(has(s,'factory')&&qAll(s,'v').length<2*prods(s,'v').length){const r=rng(),tc=has(s,'tech');enqueue(s,s.fac===1&&r<.2?'stank':tc&&r<.38?'htank':tc&&r<.5?'arty':r<.62?'mlrs':r<.78?'buggy':'tank')}
   /* expansion: an Outpost Crawler drives to a free crystal field and deploys there */
   {const crawl=units.filter(u=>u.side===me&&!u.dead&&u.type==='mcv'),qd=qAll(s,'v').filter(i=>i.t==='mcv').length,maxP=(s.diff||diffKey)==='easy'?1:2;
-    if(has(s,'factory')&&A.wave>=2&&posts.length+crawl.length+qd<maxP&&s.credits>2200&&qAll(s,'v').length<3*prods(s,'v').length)enqueue(s,'mcv');
+    if(has(s,'factory')&&A.wave>=2&&posts.length+crawl.length+qd<maxP&&s.credits>150&&qAll(s,'v').length<3*prods(s,'v').length)enqueue(s,'mcv');
     for(const u of crawl){
       if(!u.goal){const mine=blds.filter(b=>b.side===me&&!b.dead&&(b.type==='yard'||b.type==='outpost')),foes=blds.filter(b=>!b.dead&&enemy(me,b.side));
         let best=null,bd=1e9;
@@ -61,7 +65,7 @@ function aiSide(s,A,dt){
       else if(!u.path){if(Math.hypot(u.x-u.goal.x,u.y-u.goal.y)>T*3&&u.goal.tries<3){u.goal.tries++;setPath(u,u.goal.x,u.goal.y)}
         else if(!doDeploy(u)){u.goal.tries++;if(u.goal.tries>8)u.goal=null;else setPath(u,u.x+(rng()-.5)*T*5,u.y+(rng()-.5)*T*5)}}}}
   /* aircraft: a couple of gunships, and bombers while there are free pads */
-  if(has(s,'airfield')&&!qAll(s,'a').length&&s.credits>900){const gs=units.filter(u=>u.side===me&&!u.dead&&u.type==='gunship').length;
+  if(has(s,'airfield')&&!qAll(s,'a').length&&s.credits>150){const gs=units.filter(u=>u.side===me&&!u.dead&&u.type==='gunship').length;
     if(bomberRoom(s)>0&&rng()<.5)enqueue(s,'bomber');else if(gs<2+A.wave/2)enqueue(s,'gunship')}
   {const tg=blds.filter(b=>!b.dead&&BDEF[b.type].cap&&!ally(me,b.side)),engs=units.filter(u=>u.side===me&&!u.dead&&u.type==='eng');
     if(tg.length&&has(s,'barracks')&&A.t>40&&engs.length<1&&!qAll(s,'i').some(i=>i.t==='eng')&&s.credits>600)enqueue(s,'eng');
