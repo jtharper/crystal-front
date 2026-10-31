@@ -195,7 +195,7 @@ addEventListener('keydown',e=>{
   if(!escEl.hidden)return;
   if(k==='r'&&place){rotatePlace()}
   else if(k==='a'&&(e.ctrlKey||e.metaKey)){e.preventDefault();selectArmy()}
-  else if(k==='t'&&sel.some(e=>e.type==='rift'&&e.side===ME)){place=null;mode='rift'}
+  else if(k==='t'&&riftReady(sel.filter(e=>e.side===ME&&!e.dead))){place=null;mode='rift'}
   else if(k==='d'&&sel.some(u=>u.k==='u'&&u.side===ME&&UDEF[u.type].deploy)){deploySel()}
   else if(k==='g'){toggleRepair()}
   else if(k==='x'){toggleSell()}

@@ -57,6 +57,10 @@ function applyCmd(side,c){
       if(Math.hypot(rw.x-c.x,rw.y-c.y)>RIFT_R||occ[ti(c.x,c.y)])return;riftJump(rw,c.x,c.y);return}
     case 'deploy':{let any=false,bad=false;for(const u of mineU(c.u))if(UDEF[u.type].deploy){if(doDeploy(u))any=true;else bad=true}
       if(bad&&side===ME){msg("Can't deploy here: needs 3x3 open ground, off crystals and water",'bad');sfx('err')}return}
+    case 'research':{const U=UPG[c.k];if(!U)return;
+      if(c.cancel){if(s.rs&&s.rs.k===c.k){s.credits+=s.rs.paid;s.rs=null}return}
+      if(s.up[c.k]||s.rs||!blds.some(b=>b.side===side&&b.type==='shrine'&&!b.dead))return;
+      s.rs={k:c.k,prog:0,paid:0};return}
     case 'gg':s.resigned=true;return;
   }
 }

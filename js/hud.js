@@ -1,6 +1,19 @@
 'use strict';
 /* ---------- sidebar ---------- */
-const tabsEl=$('#tabs'),barEl=$('#tabbar'),btn={},tabBtn={},tabSec={};
+const tabsEl=$('#tabs'),barEl=$('#tabbar'),btn={},tabBtn={},tabSec={},rsBtn={};let rsHead=null;
+/* Shrine research icons: a gold glyph on a dark disc (blade, shield, wing-chevrons) */
+function upgIcon(k){
+  const g={wpn:'<path d="M50 14l7 8-3 34h-8l-3-34z" fill="#ffd27a"/><rect x="36" y="56" width="28" height="6" rx="2" fill="#c8a048"/><rect x="46" y="62" width="8" height="18" rx="2" fill="#9a6a34"/><circle cx="50" cy="83" r="4" fill="#ffd27a"/>',
+    arm:'<path d="M50 14l28 10v18c0 18-12 32-28 40-16-8-28-22-28-40V24z" fill="#c8a048"/><path d="M50 24l18 6v12c0 12-8 22-18 28z" fill="#ffd27a"/>',
+    spd:'<path d="M22 30l18 20-18 20h12l18-20-18-20z" fill="#c8a048"/><path d="M48 30l18 20-18 20h12l18-20-18-20z" fill="#ffd27a"/>'}[k];
+  return 'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g"><stop offset="0" stop-color="#5a3f7a"/><stop offset="1" stop-color="#140f1c"/></radialGradient></defs><circle cx="50" cy="50" r="44" fill="url(#g)" stroke="#9a6a34" stroke-width="3"/>${g}</svg>`)}
+function upgHTML(k){const U=UPG[k];return `<img class="icImg" alt="" src="${upgIcon(k)}"><div class="icBody"><div class="icName">${U.name}</div><div class="icRole">Shrine research · ${U.short}</div>
+  <p class="icDesc">${U.desc} Researched once at the Secret Shrine; one research at a time.</p><div class="icMeta">$${U.cost} · ${U.time}s</div></div>`}
+function onResearch(k){if(state!=='play')return;const s=sides[ME];
+  if(s.up[k]){msg(UPG[k].name+' is already researched.','');return}
+  if(!has(s,'shrine')){msg('Requires the Secret Shrine','bad');sfx('err');return}
+  if(s.rs){if(s.rs.k===k)return;msg('The Shrine is already researching '+UPG[s.rs.k].name+'.','bad');sfx('err');return}
+  issue({c:'research',k});sfx('click');say('Researching','build',.6)}
 const ICONS={
   b:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21V11l5-3v3l5-3v3l5-3V4h3v17z"/></svg>',
   i:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8z M7 9h10l2 6h-3v6h-3v-5h-2v5H8v-6H5z"/></svg>',
@@ -29,6 +42,17 @@ for(const c of ['b','d','i','v','a']){
     b.addEventListener('contextmenu',e=>{e.preventDefault();onCancel(t)});
     sec.appendChild(b);btn[t]=b;
   }
+  if(c==='b'){const h=document.createElement('h3');h.className='rsH';h.textContent='Shrine research';h.hidden=true;sec.appendChild(h);rsHead=h;
+    for(const k of UPG_KEYS){const U=UPG[k],b=document.createElement('button');b.type='button';b.className='bt rsc';b.dataset.k=k;b.hidden=true;
+      b.setAttribute('aria-label',`${U.name}: ${U.desc} Cost ${U.cost}, ${U.time}s.`);
+      b.innerHTML=`<img alt="" src="${upgIcon(k)}"><i class="pg"></i><span class="nm">${U.name}</span><span class="cs">$${U.cost}</span><span class="bd"></span><i class="pgb"></i>`;
+      b.addEventListener('click',()=>onResearch(k));b.addEventListener('contextmenu',e=>{e.preventDefault();if(state==='play')issue({c:'research',k,cancel:1})});
+      b.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;const r=b.getBoundingClientRect(),c2=$('#console').getBoundingClientRect(),hr=$('#hud').getBoundingClientRect();
+        icKey='upg:'+k;icEl.innerHTML=upgHTML(k);icEl.hidden=false;const w=icEl.offsetWidth,hh=icEl.offsetHeight;
+        const x=DESK?Math.min(r.left,c2.left)-hr.left-w-12:r.left+r.width/2-hr.left-w/2,y=DESK?r.top+r.height/2-hr.top-hh/2:r.top-hr.top-hh-10;
+        icEl.style.left=Math.max(8,Math.min(hr.width-w-8,x))+'px';icEl.style.top=Math.max(8,Math.min(hr.height-hh-8,y))+'px'});
+      b.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hideInfo()});
+      sec.appendChild(b);rsBtn[k]=b}}
   tabsEl.appendChild(sec);
 }
 showTab('b');
@@ -89,6 +113,14 @@ function updUI(){
     b.querySelector('.bd').textContent=badge;
     b.querySelector('.pg').style.height=(first?100-pg:0)+'%';b.querySelector('.pgb').style.width=pg+'%';
   }
+  /* Secret Shrine: its card is revealed by a Tech Center; research cards appear once it stands */
+  if(btn.shrine)btn.shrine.hidden=!has(s,'tech')&&!has(s,'shrine')&&!SANDBOX;
+  {const on=has(s,'shrine');if(rsHead)rsHead.hidden=!on;
+    for(const k of UPG_KEYS){const b=rsBtn[k];if(!b)continue;b.hidden=!on;if(!on)continue;
+      const done=!!s.up[k],cur=s.rs&&s.rs.k===k,pg=cur?s.rs.prog*100:0;
+      b.classList.toggle('locked',!done&&!!s.rs&&!cur);b.classList.toggle('done',done);
+      b.querySelector('.bd').textContent=done?'RESEARCHED':cur?(s.credits<1?'NO FUNDS':s.low?'LOW POWER':Math.floor(pg)+'%'):'';
+      b.querySelector('.pg').style.height=(cur?100-pg:0)+'%';b.querySelector('.pgb').style.width=pg+'%'}}
   for(const c of ['i','v','a']){
     const el=$('#sub_'+c),ps=prods(s,c);el.hidden=ps.length<2;if(ps.length<2)continue;
     const key=ps.map(p=>p.id).join(',');
@@ -105,7 +137,7 @@ const ROLE={gren:['Heavy trooper, area damage','Infantry · Buildings','Tanks'],
   tank:['Fast, cheap light tank','Tanks · Buildings','Infantry'],harv:['Crystal harvester','',''],yard:['Command center','',''],
   power:['Generates 100 power','',''],refinery:['Turns crystal into credits','',''],barracks:['Trains infantry','',''],
   factory:['Builds and repairs vehicles','',''],turret:['Base defense','Vehicles',''],
-  airfield:['Builds, re-arms and repairs aircraft','',''],mcv:['Deploys into a Forward Base','',''],outpost:['Forward build zone','',''],gunship:['Hovering chain-gun gunship','Infantry · Light vehicles','Rocket troops · Missiles'],bomber:['Two-bomb strike jet','Buildings · Tanks','Rocket troops · Missiles']};
+  airfield:['Builds, re-arms and repairs aircraft','',''],mcv:['Deploys into a Forward Base','',''],shrine:['Researches unit upgrades','',''],outpost:['Forward build zone','',''],gunship:['Hovering chain-gun gunship','Infantry · Light vehicles','Rocket troops · Missiles'],bomber:['Two-bomb strike jet','Buildings · Tanks','Rocket troops · Missiles']};
 let selKey='',selRefs=[];
 let selBarOn=false,selBarOff='';
 function updSel(){
@@ -175,7 +207,8 @@ function buildSelBar(us){
       b.addEventListener('click',()=>{sel=[e];sfx('click');updSel()});cards.appendChild(b);selRefs.push({e,bar:b.querySelector('.mh i'),card:b})}
     sp.querySelectorAll('.sbType').forEach(b=>b.addEventListener('click',()=>{sel=sel.filter(e=>e.type===b.dataset.t);sfx('click');updSel()}));
   }
-  if(us.some(e=>e.type==='rift')){const ab=document.createElement('button');ab.type='button';ab.className='sbAb';ab.textContent='Rift Jump';sp.appendChild(ab);
+  /* Rift Jump only on an infantry-only selection, never on a mixed army */
+  if(riftReady(us)){const ab=document.createElement('button');ab.type='button';ab.className='sbAb';ab.textContent='Rift Jump';sp.appendChild(ab);
     ab.addEventListener('click',()=>{if(ab.disabled)return;place=null;mode='rift';sfx('click');updUI()});selRefs.push({ab,list:us})}
   sp.querySelector('.sbX').addEventListener('click',()=>{sel=[];sfx('click');updSel();updUI()});
 }
@@ -241,10 +274,11 @@ const DESC={
   refinery:'Processes crystal into credits. Comes with a Harvester.',
   barracks:'Trains infantry. Build more to train several squads at once.',
   factory:'Builds vehicles and repairs damaged vehicles parked nearby.',
-  tech:'Unlocks advanced units and defenses: Marksman, Heavy Tank, Siege Artillery, Missile Tower and the Vanguard Shield Generator. Limit one.',
+  tech:'Unlocks advanced units and defenses: Marksman, Heavy Tank, Siege Artillery, Missile Tower and the Vanguard Shield Generator, and reveals the Secret Shrine. Limit one.',
   turret:'Cannon emplacement. Strong against vehicles.',
   guard:'Machine-gun tower. Strong against infantry.',
   missile:'Missile launcher tower. Hits vehicles hard from long range and shoots down aircraft.',
+  shrine:'A hidden shrine of crystal-forged relics. Research three permanent upgrades for all your units here: stronger weapons, tougher armour and faster drives. Limit one.',
   mcv:'Slow, unarmed crawler carrying a folded base. Drive it anywhere and deploy it to open a new build zone for expansions, forward defenses and remote refineries.',
   outpost:'Forward Base unfolded by an Outpost Crawler. You can place structures around it, just like around your Command Yard. Adds 20 power.',
   airfield:'Builds aircraft. Bombers land on its two pads to re-arm and repair, so each Airfield supports two bombers.',

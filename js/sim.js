@@ -44,6 +44,9 @@ function hurt(e,dmg,from){
   if(e.dead||(e.k==='b'&&BDEF[e.type].cap))return;
   if(e.k==='b'){const sh=shieldFor(e);if(sh){dmg*=.5;sh.sfl=.3}}
   if(e.k==='u'&&UDEF[e.type].stealth)e.revealT=Math.max(e.revealT||0,1.5);
+  /* Shrine upgrades: stronger unit weapons, tougher unit armour */
+  if(from&&from.k==='u'&&upOf(from.side,'wpn'))dmg*=UPG.wpn.mul;
+  if(e.k==='u'&&upOf(e.side,'arm'))dmg*=UPG.arm.mul;
   e.hp-=dmg;e.flash=.1;
   if(e.side===ME&&from&&from.side!==ME){
     const near=alerts.find(a=>Math.hypot(a.x-e.x,a.y-e.y)<T*10&&time-a.t<12);
@@ -129,7 +132,7 @@ function pathToward(u,tg){
 /* ---------- units ---------- */
 function moveAlong(u,dt){
   if(!u.path)return;
-  const d=UDEF[u.type];let step=d.speed*dt;
+  const d=UDEF[u.type];let step=d.speed*spdK(u)*dt;
   while(step>0&&u.path){
     const p=u.path[u.pi],dx=p.x-u.x,dy=p.y-u.y,dist=Math.hypot(dx,dy);
     const want=Math.atan2(dy,dx)+(u.rev?Math.PI:0);u.ang=turn(u.ang,want,dt*d.turn);
@@ -377,6 +380,12 @@ function tickProd(s,dt){
     }
   };
   run(s.q.b,'b');run(s.q.d,'d');
+  /* Shrine research: paid as it progresses, like production; lost shrine refunds what was paid */
+  if(s.rs){const shr=blds.find(b=>b.side===s.id&&b.type==='shrine'&&!b.dead),U=UPG[s.rs.k];
+    if(!shr){s.credits+=s.rs.paid;s.rs=null}
+    else{const it=s.rs;if(SANDBOX&&s.id===0)it.prog=1;
+      if(it.prog<1){const step=Math.min(1-it.prog,dt*sp/U.time),cost=U.cost*step;if(s.credits>=cost){s.credits-=cost;it.prog+=step;it.paid+=cost}}
+      if(it.prog>=.9999){s.up[it.k]=1;s.rs=null;if(s.id===ME){msg(U.name+' researched: '+U.short,'ok');sfx('ready');say('Upgrade complete','upg',.5)}}}}
   for(const c of ['i','v','a'])for(const p of prods(s,c))run(prodQ(p),c,p);
 }
 function validPlace(sid,t,tx,ty,margin,rot){

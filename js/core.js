@@ -106,12 +106,14 @@ const BDEF={
   factory:{name:'War Factory',w:3,h:3,hp:1100,cost:900,time:16,power:-30,vis:6,req:['refinery']},
   turret:{name:'Cannon Turret',w:1,h:1,hp:520,cost:350,time:9,power:-15,vis:9,req:['barracks'],range:7.5,dmg:30,rof:1.1,wt:'tcannon',psp:520},
   guard:{name:'Guard Tower',w:1,h:1,hp:420,cost:250,time:7,power:-10,vis:8,req:['barracks'],range:6.5,dmg:10,rof:.45,wt:'bullet',psp:900},
-  tech:{name:'Tech Center',w:2,h:2,hp:800,cost:1200,time:18,power:-40,vis:6,req:['factory'],max:1},
+  tech:{name:'Tech Center',w:3,h:3,hp:800,cost:1200,time:18,power:-40,vis:6,req:['factory'],max:1},
   repair:{name:'Repair Bay',w:2,h:2,hp:700,cost:600,time:12,power:-20,vis:6,req:['factory'],max:1},
   shield:{name:'Shield Generator',w:2,h:2,hp:900,cost:900,time:14,power:-40,vis:7,req:['tech'],fac:0},
   spike:{name:'Crystal Spike',w:2,h:2,hp:3000,vis:5,power:0,cap:true},
   radar:{name:'Radar Tower',w:2,h:2,hp:3000,vis:16,power:0,cap:true},
   missile:{name:'Missile Tower',w:1,h:1,hp:500,cost:600,time:12,power:-25,vis:9,req:['tech'],range:8.5,dmg:40,rof:2,wt:'rocket',psp:360},
+  /* research lab for unit upgrades (UPG); revealed once a Tech Center stands */
+  shrine:{name:'Secret Shrine',w:2,h:2,hp:900,cost:1500,time:20,power:-30,vis:6,req:['tech'],max:1},
   /* deployed by an Outpost Crawler; extends where you may build (zone tiles around it) */
   outpost:{name:'Forward Base',w:3,h:3,hp:1300,cost:1800,vis:9,power:20,zone:8},
   airfield:{name:'Airfield',w:3,h:3,hp:1000,cost:1000,time:16,power:-40,vis:7,req:['factory']}
@@ -147,10 +149,19 @@ const flying=e=>e.k==='u'&&(e.alt||0)>8;
 const armorOf=e=>e.k==='b'?'bld':flying(e)?'air':UDEF[e.type].armor==='air'?'veh':UDEF[e.type].armor;
 const wpnOf=e=>(e.k==='b'?BDEF[e.type]:UDEF[e.type]).wt;
 function canHit(a,t){const w=wpnOf(a);if(!w||!MUL[w])return false;return flying(t)?MUL[w].air>0:true}
-const CAT={power:'b',refinery:'b',barracks:'b',factory:'b',turret:'d',guard:'d',tech:'b',repair:'b',missile:'d',rifle:'i',rocket:'i',sniper:'i',eng:'i',rift:'i',stank:'v',airfield:'b',mcv:'v',gunship:'a',bomber:'a',shield:'d',tank:'v',gren:'i',htank:'v',mlrs:'v',harv:'v',buggy:'v',arty:'v'};
-const LISTS={b:['power','refinery','barracks','factory','airfield','tech'],d:['turret','guard','missile','shield'],i:['rifle','rocket','gren','sniper','eng','rift'],v:['tank','htank','mlrs','buggy','arty','stank','mcv','harv'],a:['gunship','bomber']};
+const CAT={power:'b',refinery:'b',barracks:'b',factory:'b',turret:'d',guard:'d',tech:'b',repair:'b',missile:'d',rifle:'i',rocket:'i',sniper:'i',eng:'i',rift:'i',stank:'v',airfield:'b',shrine:'b',mcv:'v',gunship:'a',bomber:'a',shield:'d',tank:'v',gren:'i',htank:'v',mlrs:'v',harv:'v',buggy:'v',arty:'v'};
+const LISTS={b:['power','refinery','barracks','factory','airfield','tech','shrine'],d:['turret','guard','missile','shield'],i:['rifle','rocket','gren','sniper','eng','rift'],v:['tank','htank','mlrs','buggy','arty','stank','mcv','harv'],a:['gunship','bomber']};
 const TITLES={b:'Structures',d:'Defenses',i:'Infantry',v:'Vehicles',a:'Aircraft'};
 const def=t=>BDEF[t]||UDEF[t];
+/* Secret Shrine research: each upgrade is bought once and applies to every unit you own (infantry, vehicles, aircraft) */
+const UPG={
+  wpn:{name:'Crystal-Forged Weapons',short:'+20% damage',desc:'All your units deal 20% more damage.',cost:1500,time:45,mul:1.2},
+  arm:{name:'Warded Armor',short:'-20% damage taken',desc:'All your units take 20% less damage.',cost:1500,time:45,mul:.8},
+  spd:{name:'Spirit Drives',short:'+15% speed',desc:'All your units move 15% faster.',cost:1200,time:35,mul:1.15}};
+const UPG_KEYS=['wpn','arm','spd'];
+const upOf=(side,k)=>{const sd=typeof sides!=='undefined'&&sides&&sides[side];return !!(sd&&sd.up&&sd.up[k])};
+const spdK=u=>upOf(u.side,'spd')?UPG.spd.mul:1;
+const riftReady=us=>us.some(e=>e.type==='rift')&&us.every(e=>e.k==='u'&&UDEF[e.type].armor==='inf');
 const UNAMES=[
   {gren:'Breacher',htank:'Citadel Heavy Tank',mlrs:'Javelin Carrier',shield:'Aegis Shield Generator',rifle:'Trooper',rocket:'Lancer',eng:'Field Engineer',sniper:'Ranger',tank:'Bulwark Tank',buggy:'Pathfinder Rover',arty:'Longbow Artillery',harv:'Crystal Hauler',gunship:'Kestrel Gunship',bomber:'Albatross Bomber',airfield:'Airbase',mcv:'Frontier Crawler',outpost:'Frontier Post'},
   {gren:'Bombardier',htank:'Juggernaut Heavy Tank',mlrs:'Hellstorm Launcher',stank:'Phantom Stealth Tank',rifle:'Conscript',rocket:'Breaker',eng:'Saboteur',sniper:'Deadeye',tank:'Ironclad Tank',buggy:'Marauder Buggy',arty:'Hellfire Howitzer',harv:'Reaper Harvester',gunship:'Vulture Gunship',bomber:'Warhammer Bomber',airfield:'Airstrip',mcv:'Bastion Rig',outpost:'Iron Bastion'},

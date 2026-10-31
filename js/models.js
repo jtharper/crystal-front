@@ -584,6 +584,13 @@ function buildBld(type,f){
   const transformer=(x,z)=>{box(x,PT+.8,z,6,6,4.6,MT.steel);for(const sx of [-1,1])for(let i=0;i<3;i++)bar(x+sx*3.25,PT+3.8,z-1.5+i*1.5,.5,5,.3,MT.dark);
     for(const dx of [-1.8,0,1.8]){P(g,G.cyl(.45,.6,3,8),MT.ceram,x+dx,PT+8.3,z);P(g,G.sph(.6),MT.ceram,x+dx,PT+9.9,z)}};
   switch(type){
+    case 'shrine':{
+      /* Blender model (see /blender/shrine.py): stone temple, golden spiral, crystal tanks */
+      if(GLB.scene.shrine&&glbInto(g,'shrine',f,0,[]))break;
+      P(g,G.cyl(30,30,2.2,8),MT.stone2,0,1.1,0);P(g,G.cyl(20,21,10,8),MT.stone,0,10.6,0);P(g,G.cyl(21.3,21.3,1.2,8),MT.bronze,0,15.2,0);
+      P(g,G.dome(16.5),TD[s],0,15.6,0,0,0,0,1,.55,1);P(g,G.cyl(1,2.4,22,12),MT.sgold,0,36,0);P(g,G.sph(2.4),TG[s],0,51,0);
+      for(const sx of [-20,20]){P(g,G.cyl(4.2,4.2,14,16),MT.crys,sx,14,-19);P(g,G.cyl(5,5,2,16),MT.bronze,sx,22,-19)}
+      break}
     case 'outpost':{
       /* Blender model (see /blender/outpost.py): hub on outrigger legs with a turning radar */
       if(GLB.scene.outpost){const gp=glbInto(g,'outpost',f,0,['dish']);if(gp&&gp.emblem)emblem(g,f,gp.emblem[0],gp.emblem[1]+.3,gp.emblem[2],5);break}
@@ -971,6 +978,8 @@ function buildBld(type,f){
   }
   for(const [x,z] of LAMPS[type]||[])lamp(g,x,PT,z);
   if(drop){for(const c of g.children)c.position.y-=drop;for(const p of steam)p[1]-=drop}
+  /* the Tech Center is a little bigger than the other 2x2 buildings: a 3x3 footprint, model scaled to fill it */
+  if(type==='tech'){const k=1.3;for(const c of g.children){c.position.x*=k;c.position.z*=k;c.position.y*=k;c.scale.multiplyScalar(k)}for(const p of steam){p[0]*=k;p[1]*=k;p[2]*=k}}
   /* earth-coloured footing below ground level: only shows where the building sits on a slope */
   if(!['turret','guard','missile','spike','radar'].includes(type))P(g,new THREE.BoxGeometry(w-8,30,h-8),MT.found,0,-15.6,0);
   g.userData.steam=steam;

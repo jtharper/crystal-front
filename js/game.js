@@ -10,7 +10,7 @@ function simCanStep(){return typeof netCanStep!=='function'||netCanStep(simTick)
 /* fingerprint of everything that matters in the game state, compared between players to catch any desync */
 const _hb=new Float64Array(1),_hw=new Uint32Array(_hb.buffer);
 function simHash(){let h=2166136261>>>0;const f=v=>{_hb[0]=v||0;h=Math.imul(h^_hw[0],16777619);h=Math.imul(h^_hw[1],16777619)};
-  for(const u of units){f(u.id);f(u.x);f(u.y);f(u.hp);f(u.ang);if(u.air){f(u.alt);f(u.ammo)}}for(const b of blds){f(b.id);f(b.hp);f(b.side)}for(const s of sides)f(s.credits);f(projs.length);return h>>>0}
+  for(const u of units){f(u.id);f(u.x);f(u.y);f(u.hp);f(u.ang);if(u.air){f(u.alt);f(u.ammo)}}for(const b of blds){f(b.id);f(b.hp);f(b.side)}for(const s of sides){f(s.credits);f((s.up.wpn?1:0)+(s.up.arm?2:0)+(s.up.spd?4:0)+(s.rs?8:0))}f(projs.length);return h>>>0}
 function newWorld(sd0,facs,opt){SIMIN++;try{newWorld0(sd0,facs,opt)}finally{SIMIN--}}
 function newWorld0(sd0,facs,opt){
   opt=opt||{};
@@ -18,7 +18,7 @@ function newWorld0(sd0,facs,opt){
   units=[];blds=[];projs=[];fxs=[];sel=[];groups={};nid=1;time=0;fogT=0;winT=0;regT=0;cmdQueue=[];paused=false;mode=null;place=null;drag=null;lastAlert=-99;alertPos=null;alerts=[];
   genMap();
   const pc=playerCol(),cols=opt.cols||[pc,...COL_ORDER.filter(c=>c!==pc)],cor=opt.corners||[0,1,2,3];
-  sides=facs.map((fc,id)=>({id,fac:fc,col:cols[id],corner:cor[id],team:(opt.teams||[])[id]||0,ai:opt.ai&&opt.ai[id]!=null?!!opt.ai[id]:id!==0,diff:(opt.diffs||[])[id]||diffKey,credits:opt.credits||2500,q:{b:[],d:[],i:[],v:[]},ready:null,readyD:null,pw:0,use:0,low:false}));
+  sides=facs.map((fc,id)=>({id,fac:fc,col:cols[id],corner:cor[id],team:(opt.teams||[])[id]||0,ai:opt.ai&&opt.ai[id]!=null?!!opt.ai[id]:id!==0,diff:(opt.diffs||[])[id]||diffKey,credits:opt.credits||2500,q:{b:[],d:[],i:[],v:[]},up:{},rs:null,ready:null,readyD:null,pw:0,use:0,low:false}));
   if(typeof glbNeed==='function')for(const sd of sides)glbNeed(sd.fac);
   for(const sd of sides){
     const c=sd.corner,m=(tx,ty,w,h)=>cornerBox(c,tx,ty,w,h),r0=CROT[c];

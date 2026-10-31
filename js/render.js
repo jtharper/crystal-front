@@ -177,6 +177,9 @@ Object.assign(MT,{lamp:mat(0xfff2c8,{emissive:0xffd890,emissiveIntensity:1.6}),c
   haz:mat(0xffffff,{map:TEX.haz,roughness:.55,metalness:.2}),win:mat(0xffffff,{map:TEX.grid,emissive:0x5aa0e0,emissiveMap:TEX.grid,emissiveIntensity:.55,roughness:.25,metalness:.1}),
   pad:mat(0x979891,{roughness:.85,metalness:.05}),crane:mat(0xf0b419,{roughness:.42,metalness:.3})});
 MT.found=mat(0x5e4e3c,{roughness:1,metalness:0});
+/* Secret Shrine materials */
+Object.assign(MT,{stone:mat(0x36332f,{roughness:.88,metalness:0}),stone2:mat(0x55504a,{roughness:.92,metalness:0}),bronze:mat(0x9a6a34,{roughness:.35,metalness:.85}),
+  sgold:mat(0xffc65a,{emissive:0xffa62a,emissiveIntensity:.9,roughness:.25,metalness:.6})});
 Object.assign(MT,{gdome:mat(0xc4e6f6,{metalness:.35,roughness:.05,flatShading:true,envMapIntensity:1.8,emissive:0x1c3c52,emissiveIntensity:.3}),gwire:mat(0xeef6ff,{wireframe:true,metalness:.2,roughness:.4}),statue:mat(0x5d6d68,{metalness:.55,roughness:.45})});
 G.chamf=(w,h,d)=>{const c=Math.min(h,w)*.22;return G.prof('ch'+w+'x'+h,[[-w/2,0],[w/2,0],[w/2,h-c],[w/2-c,h],[-w/2+c,h],[-w/2,h-c]],d)};
 G.cylS=(a,b,h,n)=>gk('S'+a+','+b+','+h+','+n,()=>creased(new THREE.CylinderGeometry(a,b,h,n),30));
@@ -195,7 +198,7 @@ TEX.panelN=nrmMap(TEX.panel,6);TEX.concreteN=nrmMap(TEX.concrete,4);TEX.rockN=nr
 for(const m of TM){m.map=TEX.panel;m.normalMap=TEX.panelN;m.normalScale=new THREE.Vector2(.35,.35)}
 function part(geo,m,x,y,z){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;return o}
 function P(g,geo,m,x,y,z,rx,ry,rz,sx,sy,sz){const o=part(geo,m,x,y,z);if(rx||ry||rz)o.rotation.set(rx||0,ry||0,rz||0);if(sx)o.scale.set(sx,sy||sx,sz||sx);g.add(o);return o}
-const BTOP={shield:44,spike:80,radar:42,yard:50,power:42,refinery:50,barracks:38,factory:42,turret:32,guard:32,missile:26,tech:50,airfield:40,outpost:44};
+const BTOP={shield:44,spike:80,radar:42,yard:50,power:42,refinery:50,barracks:38,factory:42,turret:32,guard:32,missile:26,tech:65,shrine:52,airfield:40,outpost:44};
 const UTOP={gren:22,htank:32,mlrs:28,stank:24,rift:22,tank:28,harv:26,rifle:20,rocket:22,sniper:22,eng:21,buggy:20,arty:30,gunship:14,bomber:12,mcv:28};
 
 /* merge each group's static parts per material, so a model costs a few draw calls */

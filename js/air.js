@@ -60,7 +60,7 @@ function updGunship(u,dt,d){
     if(dist<=d.range*T&&u.cool<=0&&u.alt>d.alt*.6&&Math.abs(angd(u.ang,face))<.3){u.cool=d.rof;shoot(u,tg,d)}}
   else if(u.dest){gx=u.dest.x;gy=u.dest.y;if(Math.hypot(gx-u.x,gy-u.y)<4){u.dest=null;u.amove=null;gx=null}}
   let spT=0;
-  if(gx!=null){const dx=gx-u.x,dy=gy-u.y,L=Math.hypot(dx,dy);if(L>1){spT=Math.min(d.speed,L*2.2);if(face==null)face=Math.atan2(dy,dx);u.mvx=dx/L;u.mvy=dy/L}}
+  if(gx!=null){const dx=gx-u.x,dy=gy-u.y,L=Math.hypot(dx,dy);if(L>1){spT=Math.min(d.speed*spdK(u),L*2.2);if(face==null)face=Math.atan2(dy,dx);u.mvx=dx/L;u.mvy=dy/L}}
   u.v=approach(u.v||0,spT*Math.min(1,.25+u.alt/(d.alt*.5)),dt*(spT>(u.v||0)?140:220));
   if(u.v>0){u.x+=(u.mvx||0)*u.v*dt;u.y+=(u.mvy||0)*u.v*dt}
   if(face!=null)u.ang=turn(u.ang,face,dt*d.turn);
@@ -87,7 +87,7 @@ function updBomber(u,dt,d){
   else{const c=home||u;if(!u.orb||home)u.orb={x:c.x,y:c.y};gx=u.orb.x;gy=u.orb.y;mode='orbit'}
   if(mode!=='orbit')u.orb=null;
   const dx=gx-u.x,dy=gy-u.y,L=Math.hypot(dx,dy),want=Math.atan2(dy,dx),off=angd(u.ang,want),R=d.speed/d.turn;
-  let altT=d.alt,spd=d.speed,tk=1;
+  let altT=d.alt,spd=d.speed*spdK(u),tk=1;
   if(mode==='land'&&L<R*1.7){spd=Math.max(34,Math.min(d.speed,L*1.4));altT=Math.min(d.alt,L*.55);tk=3.2;
     if(L<14){const st=Math.min(L,Math.max(spd,40)*dt);if(L>.01){u.x+=dx/L*st;u.y+=dy/L*st}u.ang=turn(u.ang,refFace(home)+Math.PI,dt*2);u.v=st/dt;
       u.alt=approach(u.alt,0,dt*40);

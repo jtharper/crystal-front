@@ -21,10 +21,12 @@ for (const d of ['css', 'js', 'tex']) fs.cpSync(rel(d), path.join(OUT, d), { rec
 let glb = fs.readFileSync(rel('js', 'glb.js'), 'utf8');
 const refs = [...new Set([...glb.matchAll(/'models\/([A-Za-z0-9_]+\.(?:json|jpg))'/g)].map(m => m[1]))];
 let bytes = 0;
+const { createHash: mkHash } = await import('node:crypto');
+const ver = {}; // published file -> short content hash, appended to its URL so an updated model is never served from cache
 for (const f of refs) {
   const src = rel('models', f);
   if (!fs.existsSync(src)) throw new Error('missing model file ' + f);
-  if (f.endsWith('.jpg')) { fs.copyFileSync(src, path.join(OUT, 'models', f)); continue; }
+  if (f.endsWith('.jpg')) { fs.copyFileSync(src, path.join(OUT, 'models', f)); ver[f] = mkHash('sha1').update(fs.readFileSync(src)).digest('hex').slice(0, 10); continue; }
   const g = JSON.parse(fs.readFileSync(src, 'utf8'));
   if (g.buffers.length !== 1) throw new Error('expected one buffer in ' + f);
   const bin = Buffer.from(g.buffers[0].uri.split(',', 2)[1], 'base64');
@@ -36,8 +38,9 @@ for (const f of refs) {
   jh.writeUInt32LE(js.length, 0); jh.writeUInt32LE(0x4E4F534A, 4); bh.writeUInt32LE(bn.length, 0); bh.writeUInt32LE(0x004E4942, 4);
   const out = Buffer.concat([head, jh, js, bh, bn]);
   fs.writeFileSync(path.join(OUT, 'models', f.replace(/\.json$/, '.glb')), out); bytes += out.length;
+  ver[f] = mkHash('sha1').update(out).digest('hex').slice(0, 10);
 }
-glb = glb.replace(/'models\/([A-Za-z0-9_]+)\.json'/g, "'models/$1.glb'");
+glb = glb.replace(/'models\/([A-Za-z0-9_]+)\.(json|jpg)'/g, (m, n, e) => `'models/${n}.${e === 'json' ? 'glb' : 'jpg'}?v=${ver[n + '.' + e]}'`);
 fs.writeFileSync(path.join(OUT, 'js', 'glb.js'), glb);
 
 // --- build id: both online players must run the same game code (a hash of every script) ---
@@ -68,7 +71,7 @@ fs.writeFileSync(path.join(OUT, 'index.html'), html);
 
 // --- Cloudflare Pages caching rules ---
 fs.writeFileSync(path.join(OUT, '_headers'), `/models/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=31536000, immutable
 /tex/*
   Cache-Control: public, max-age=86400
 /vendor/*

@@ -44,14 +44,21 @@ function aiSide(s,A,dt){
     else if(cnt('refinery')<2)nb='refinery';
     else if(!cnt('tech')&&A.wave>=1)nb='tech';
     else if(!cnt('airfield')&&A.wave>=2)nb='airfield';
+    else if(!cnt('shrine')&&cnt('tech')&&A.wave>=3)nb='shrine';
     else if(cnt('barracks')<2)nb='barracks';
     else if(cnt('factory')<2)nb='factory';
-    if(nb&&s.credits>=Math.min(150,def(nb).cost*.4))enqueue(s,nb);
+    if(nb)enqueue(s,nb);
+    /* saving for a structure: hold back new unit orders until it is under way */
+    A.saving=!!nb&&!s.q.b.length&&!s.ready;A.nb=nb;
   }
   const harvs=units.reduce((n,u)=>n+(u.side===me&&u.type==='harv'&&!u.dead?1:0),0)+qAll(s,'v').filter(i=>i.t==='harv').length;
   if(has(s,'factory')&&has(s,'refinery')&&harvs<cnt('refinery')+1+(A.wave>2?1:0)&&qAll(s,'v').length<2*prods(s,'v').length)enqueue(s,'harv');
-  if(has(s,'barracks')&&qAll(s,'i').length<2*prods(s,'i').length){const r=rng();enqueue(s,s.fac===2&&r<.15?'rift':r<(eAir?.62:.4)?'rocket':r<.55?'gren':has(s,'tech')&&r<.65?'sniper':'rifle')}
-  if(has(s,'factory')&&qAll(s,'v').length<2*prods(s,'v').length){const r=rng(),tc=has(s,'tech');enqueue(s,s.fac===1&&r<.2?'stank':tc&&r<.38?'htank':tc&&r<.5?'arty':r<.62?'mlrs':r<.78?'buggy':'tank')}
+  if(A.saving)A.saveT=(A.saveT||0)+1;else A.saveT=0;
+  const spend=!A.saving||A.saveT>25;
+  if(spend&&has(s,'barracks')&&qAll(s,'i').length<2*prods(s,'i').length){const r=rng();enqueue(s,s.fac===2&&r<.15?'rift':r<(eAir?.62:.4)?'rocket':r<.55?'gren':has(s,'tech')&&r<.65?'sniper':'rifle')}
+  if(spend&&has(s,'factory')&&qAll(s,'v').length<2*prods(s,'v').length){const r=rng(),tc=has(s,'tech');enqueue(s,s.fac===1&&r<.2?'stank':tc&&r<.38?'htank':tc&&r<.5?'arty':r<.62?'mlrs':r<.78?'buggy':'tank')}
+  /* Secret Shrine: research every upgrade in turn */
+  if(!s.rs&&has(s,'shrine')){const k=UPG_KEYS.find(k=>!s.up[k]);if(k)s.rs={k,prog:0,paid:0}}
   /* expansion: an Outpost Crawler drives to a free crystal field and deploys there */
   {const crawl=units.filter(u=>u.side===me&&!u.dead&&u.type==='mcv'),qd=qAll(s,'v').filter(i=>i.t==='mcv').length,maxP=(s.diff||diffKey)==='easy'?1:2;
     if(has(s,'factory')&&A.wave>=2&&posts.length+crawl.length+qd<maxP&&s.credits>150&&qAll(s,'v').length<3*prods(s,'v').length)enqueue(s,'mcv');
