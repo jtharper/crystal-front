@@ -543,7 +543,8 @@ function syncEntities(){
     aoAdd(e.x,footY(e)+.5,e.y,e.w*T*1.22,e.h*T*1.22,0);
     /* a freshly deployed Forward Base unfolds out of the crawler */
     if(e.born!=null){const a=Math.min(1,(time-e.born)/1.6),k=a*a*(3-2*a);r.g.scale.set(.55+.45*k,.25+.75*k,.55+.45*k);if(a>=1)e.born=null}
-    if(r.turret)r.turret.rotation.y=-e.tang;
+    /* the turret sits in the building's rotated frame: take the placement rotation out so the barrel faces the target */
+    if(r.turret)r.turret.rotation.y=-e.tang+(e.rot||0)*Math.PI/2;
     if(r.crane){const busy=sides[e.side]&&sides[e.side].q.b.length&&!sides[e.side].low;r.cph+=fdt*(busy?1.6:.35);r.crane.rotation.y=-.25+Math.sin(r.cph)*(busy?.33:.12)}
     if(r.fans.length&&!(sides[e.side]&&sides[e.side].low))for(const fn of r.fans)fn.rotation.y+=fdt*9;
     if(r.doors.length){if(e.doorT>0)e.doorT-=fdt;const t2=e.doorT>0?e.doorT:0,op=Math.max(0,Math.min(1,(2.4-t2)/.4,t2/.5));

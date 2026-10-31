@@ -62,9 +62,12 @@ def crawler():
         K.box((.4, 3.2, 1.0), (-28.2, -6 + k * 3, 16), rot=(R(35), 0, 0), mat='haz', bev=0)
     K.box((1.0, 16, 8), (-28.3, 0, 19), mat='WALL', bev=.2)
     # roof: folded dish, sensor mast, antenna, light bar
-    K.cyl(2.4, 2.4, 2, (-18, 0, 27), mat='gun', segs=14)
-    K.lathe([(0, 0), (6.5, 1.2), (8.2, 2.6), (8.3, 2.9), (0, 1.3)], 24, loc=(-18, 0, 28), rot=(0, R(-70), 0), mat='steel', close=True)
-    K.cyl(.4, .4, 4, (-16, 0, 30), rot=(0, R(-70), 0), mat='gun', segs=8)
+    # radar on a mast, high enough that the tilted dish clears the roof
+    K.cyl(3.2, 3.6, 1.6, (-18, 0, 26.8), mat='gun', segs=14)
+    K.cyl(1.3, 1.6, 9, (-18, 0, 31.5), mat='steel', segs=12)
+    K.cyl(2.2, 2.2, 1.6, (-18, 0, 36), mat='gun', segs=14)
+    K.lathe([(0, 0), (6.5, 1.2), (8.2, 2.6), (8.3, 2.9), (0, 1.3)], 24, loc=(-18, 0, 37.2), rot=(0, R(-70), 0), mat='steel', close=True)
+    K.cyl(.4, .4, 4, (-16, 0, 39.2), rot=(0, R(-70), 0), mat='gun', segs=8)
     K.box((8, 5, 3), (2, -5, 27.5), mat='WALL', bev=.3)
     K.box((8.4, 5.4, .8), (2, -5, 29.2), mat='GLOW', bev=.1)
     K.cyl(.25, .15, 26, (-26, 9, 39), mat='steel', segs=6, bev=0)
