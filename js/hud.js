@@ -8,7 +8,7 @@ function upgIcon(k){
     spd:'<path d="M22 30l18 20-18 20h12l18-20-18-20z" fill="#c8a048"/><path d="M48 30l18 20-18 20h12l18-20-18-20z" fill="#ffd27a"/>'}[k];
   return 'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g"><stop offset="0" stop-color="#5a3f7a"/><stop offset="1" stop-color="#140f1c"/></radialGradient></defs><circle cx="50" cy="50" r="44" fill="url(#g)" stroke="#9a6a34" stroke-width="3"/>${g}</svg>`)}
 function upgHTML(k){const U=UPG[k];return `<img class="icImg" alt="" src="${upgIcon(k)}"><div class="icBody"><div class="icName">${U.name}</div><div class="icRole">Shrine research · ${U.short}</div>
-  <p class="icDesc">${U.desc} Researched once at the Secret Shrine; one research at a time.</p><div class="icMeta">$${U.cost} · ${U.time}s</div></div>`}
+  <p class="icDesc">${U.desc} Researched once at the Secret Shrine; one research at a time.</p><div class="icMeta">${SANDBOX?'FREE':'$'+U.cost} · ${U.time}s</div></div>`}
 function onResearch(k){if(state!=='play')return;const s=sides[ME];
   if(s.up[k]){msg(UPG[k].name+' is already researched.','');return}
   if(!has(s,'shrine')){msg('Requires the Secret Shrine','bad');sfx('err');return}
@@ -229,7 +229,6 @@ function buildBldBar(b){
     <div class="sbRow"><span class="lbl">Health</span><span class="sbV ht"></span></div><div class="hp hpm"><i></i></div>${fight}
     <div class="sbStat"></div>
     ${prod?`<div class="sbRow"><span class="lbl">Production</span></div><div class="sbQ"></div><div class="sbHint">${TOUCH?'Tap':'Right-click'} the ground to set its rally point</div>`:''}
-    ${own?`<div class="sbBtns"><button type="button" class="scBtn" data-a="rep">Repair</button>${canSell?`<button type="button" class="scBtn sell" data-a="sell">Sell $${Math.floor((d.cost||0)*.5)}</button>`:''}</div>`:''}
     </div></div><button type="button" class="sbX" aria-label="Deselect">&#10005;</button>`;
   const rb=sp.querySelector('[data-a="rep"]'),sb=sp.querySelector('[data-a="sell"]');
   selRefs.push({bld:b,bar:sp.querySelector('.hpm i'),txt:sp.querySelector('.ht'),rep:rb,stat:sp.querySelector('.sbStat'),q:sp.querySelector('.sbQ')});
@@ -242,7 +241,6 @@ function buildSel(list){
   if(list.length===1){
     const e=list[0],isB=e.k==='b',dn=isB?BDEF[e.type].name:nm(e.type,e.side);
     sp.innerHTML=`<img class="scImg" alt="" src="${thumb(e.type,skinOf(e.side),96)}"><div class="scMain"><div class="scName">${dn}</div><div class="hp hpm"><i></i></div>${e.type==='harv'?'<div class="hp cargo"><i></i></div>':''}</div>`+
-      (isB?`<button type="button" class="scBtn" data-a="rep">Repair</button>`:'')+(isB&&e.type!=='yard'?`<button type="button" class="scBtn sell" data-a="sell">Sell $${Math.floor((BDEF[e.type].cost||0)*.5)}</button>`:'')+
       `<button type="button" class="scX" aria-label="Deselect">&#10005;</button>`;
     selRefs.push({e,bar:sp.querySelector('.hpm i'),cargo:e.type==='harv'?sp.querySelector('.hp.cargo i'):null,rep:sp.querySelector('[data-a="rep"]')});
     const rb=sp.querySelector('[data-a="rep"]');if(rb)rb.addEventListener('click',()=>{if(e.hp>=e.mhp&&!e.repairing){msg(BDEF[e.type].name+' is not damaged','');return}issue({c:'repair',b:e.id,on:e.repairing?0:1});sfx('click');updSel()});
@@ -303,7 +301,7 @@ function infoHTML(t,side){
   else if(U)stats=bar('Health',d.hp,950)+bar('Speed',d.speed,128);
   else if(d.dmg)stats=bar('Health',d.hp,1600)+bar('Damage',d.dmg/d.rof,40)+bar('Range',d.range,11);
   else stats=bar('Health',d.hp,3000);
-  const meta=[d.cost?'$'+d.cost:'',d.time?d.time+'s':'',!U&&d.power?(d.power>0?'+':'')+d.power+' power':'',(d.req||[]).length?'Needs '+d.req.map(r=>BDEF[r].name).join(', '):''].filter(Boolean).join(' · ');
+  const meta=[d.cost?(SANDBOX?'FREE':'$'+d.cost):'',d.time?d.time+'s':'',!U&&d.power?(d.power>0?'+':'')+d.power+' power':'',(d.req||[]).length?'Needs '+d.req.map(r=>BDEF[r].name).join(', '):''].filter(Boolean).join(' · ');
   return `<img class="icImg" alt="" src="${thumb(t,sk,260)}"><div class="icBody"><div class="icName">${nm(t,side||0)}</div><div class="icRole">${ro[0]||d.name}</div>
     <p class="icDesc">${DESC[t]||''}</p>${stats}
     ${ro[1]||ro[2]?`<div class="icVs">${ro[1]?`<span class="g">Strong vs ${ro[1]}</span>`:''}${ro[2]?`<span class="r">Weak vs ${ro[2]}</span>`:''}</div>`:''}
