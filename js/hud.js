@@ -42,7 +42,12 @@ for(const c of ['b','d','i','v','a']){
     b.addEventListener('contextmenu',e=>{e.preventDefault();onCancel(t)});
     sec.appendChild(b);btn[t]=b;
   }
-  if(c==='b'){const h=document.createElement('h3');h.className='rsH';h.textContent='Shrine research';h.hidden=true;sec.appendChild(h);rsHead=h;
+  tabsEl.appendChild(sec);
+}
+/* Shrine research: its own panel, opened only by selecting your Secret Shrine (no tab button of its own) */
+{const c='r',sec=document.createElement('section');sec.className='tab';sec.setAttribute('role','tabpanel');tabSec.r=sec;
+  const tb=document.createElement('button');tb.type='button';tb.className='tb';tb.hidden=true;tabBtn.r=tb;
+  {const h=document.createElement('h3');h.className='rsH';h.textContent='Shrine research';sec.appendChild(h);rsHead=h}
     for(const k of UPG_KEYS){const U=UPG[k],b=document.createElement('button');b.type='button';b.className='bt rsc';b.dataset.k=k;b.hidden=true;
       b.setAttribute('aria-label',`${U.name}: ${U.desc} Cost ${U.cost}, ${U.time}s.`);
       b.innerHTML=`<img alt="" src="${upgIcon(k)}"><i class="pg"></i><span class="nm">${U.name}</span><span class="cs">$${U.cost}</span><span class="bd"></span><i class="pgb"></i>`;
@@ -52,9 +57,8 @@ for(const c of ['b','d','i','v','a']){
         const x=DESK?Math.min(r.left,c2.left)-hr.left-w-12:r.left+r.width/2-hr.left-w/2,y=DESK?r.top+r.height/2-hr.top-hh/2:r.top-hr.top-hh-10;
         icEl.style.left=Math.max(8,Math.min(hr.width-w-8,x))+'px';icEl.style.top=Math.max(8,Math.min(hr.height-hh-8,y))+'px'});
       b.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hideInfo()});
-      sec.appendChild(b);rsBtn[k]=b}}
-  tabsEl.appendChild(sec);
-}
+      sec.appendChild(b);rsBtn[k]=b}
+  tabsEl.appendChild(sec)}
 showTab('b');
 for(const c of ['i','v','a'])$('#sub_'+c).addEventListener('click',e=>{const b=e.target.closest('.stb');if(!b)return;prodSel[c]=+b.dataset.id;sfx('click');updUI()});
 const unlocked={d:false,i:false,v:false,a:false};
@@ -113,10 +117,12 @@ function updUI(){
     b.querySelector('.bd').textContent=badge;
     b.querySelector('.pg').style.height=(first?100-pg:0)+'%';b.querySelector('.pgb').style.width=pg+'%';
   }
-  /* Secret Shrine: its card is revealed by a Tech Center; research cards appear once it stands */
+  /* Secret Shrine: its card is revealed by a Tech Center */
   if(btn.shrine)btn.shrine.hidden=!has(s,'tech')&&!has(s,'shrine')&&!SANDBOX;
-  {const on=has(s,'shrine');if(rsHead)rsHead.hidden=!on;
-    for(const k of UPG_KEYS){const b=rsBtn[k];if(!b)continue;b.hidden=!on;if(!on)continue;
+  /* the research panel belongs to the selected Shrine: leave it when the Shrine is no longer selected */
+  if(curTab==='r'&&!sel.some(e=>e.type==='shrine'&&e.side===ME&&!e.dead)){showTab('b');if(DESK)trayOpen=false}
+  {const on=has(s,'shrine');
+    for(const k of UPG_KEYS){const b=rsBtn[k];if(!b)continue;b.hidden=false;if(!on)continue;
       const done=!!s.up[k],cur=s.rs&&s.rs.k===k,pg=cur?s.rs.prog*100:0;
       b.classList.toggle('locked',!done&&!!s.rs&&!cur);b.classList.toggle('done',done);
       b.querySelector('.bd').textContent=done?'RESEARCHED':cur?(s.credits<1?'NO FUNDS':s.low?'LOW POWER':Math.floor(pg)+'%'):'';
@@ -145,7 +151,7 @@ function updSel(){
   if(!list.length||state!=='play'){bar.hidden=true;selBarOn=false;selKey='';selBarOff='';return}
   const one=list.length===1?list[0]:null,pc=one&&one.k==='b'?({barracks:'i',factory:'v',airfield:'a'})[one.type]||null:null;
   const us=list.filter(e=>e.k==='u'),bs=list.filter(e=>e.k==='b'),key=list.map(e=>e.id).join(',');
-  if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else if(bs.length&&DESK)buildBldBar(bs[0]);else selRefs=[]}
+  if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}else if(one&&one.k==='b'&&one.type==='shrine'){showTab('r');trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else if(bs.length&&DESK)buildBldBar(bs[0]);else selRefs=[]}
   selBarOn=(us.length>0||(bs.length>0&&DESK))&&selBarOff!==key&&!place;bar.hidden=!selBarOn;
   for(const r of selRefs){
     if(r.bld){const b=r.bld,d=BDEF[b.type],f=Math.max(0,b.hp/b.mhp),sd=sides[b.side];
