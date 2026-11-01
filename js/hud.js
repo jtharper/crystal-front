@@ -77,11 +77,14 @@ function onCancel(t){
   if(state!=='play')return;const c=CAT[t],cp=isUnitCat(c)?curProd(c):null;
   issue({c:'cancel',t,p:cp?cp.id:null});if(isStruct(c)&&place&&place.t===t)place=null;
 }
-let wasLow=false;
+let wasLow=false,priceMode=null;
 function updUI(){
   if(!sides||state==='menu')return;
   const s=sides[ME];
   $('#cr').textContent='$'+Math.floor(s.credits).toLocaleString('en-US');
+  /* prices on the build and research cards: "FREE" in sandbox */
+  if(priceMode!==SANDBOX){priceMode=SANDBOX;for(const b of document.querySelectorAll('#tabs .bt')){const c=b.querySelector('.cs'),cost=b.dataset.k?UPG[b.dataset.k].cost:def(b.dataset.t).cost;
+    c.textContent=SANDBOX?'FREE':'$'+cost;c.classList.toggle('free',SANDBOX)}}
   const f=s.pw?Math.min(1,s.use/s.pw):(s.use?1:0),pb=$('#pmfill');pb.style.width=(s.low?100:f*100)+'%';
   pb.classList.toggle('low',s.low);pb.classList.toggle('warn',!s.low&&f>.85);
   if(s.low&&!wasLow&&state==='play'){msg('Low power: radar and defenses offline. Build a Power Plant.','bad');sfx('err');say('Low power','low',8)}wasLow=s.low;

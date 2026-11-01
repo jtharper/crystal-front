@@ -205,7 +205,7 @@ function updCombat(u,dt){
   }
 }
 /* muzzle offsets in model space: [forward, height, side], an entry may be per faction [Vanguard,Syndicate,Helix] */
-const MUZ={rifle:[11,10,1.2],rift:[11,10,1.2],rocket:[10,[14,14,12.6],3.6],gren:[8.5,10,1.2],sniper:[[20,27,19],10.2,1.2],
+const MUZ={rifle:[11,10,1.2],rift:[11,10,1.2],rocket:[10,[14,14,12.6],3.6],gren:[8.5,10,1.2],sniper:[[14,13.5,13],10.2,1.2],
   tank:[[32,40.7,49.1],[16.2,18.1,17.6],[0,3,0]],htank:[[37.6,49.2,51.5],[19.6,20.4,20.4],[4.3,4.2,3.8]],mlrs:[[2,-.2,-3],[22,22.3,26.6],[3,1.4,2.8]],buggy:[[9.2,10.6,1.8],[13.6,16.7,16.6],[0,0,2.5]],arty:[[30,35,35.8],[27,28.8,29.1],0],stank:[26.1,16,1.6],
   turret:[16,22,0],guard:[12,24,0],missile:[10,22,0],gunship:[27,-1,0],bomber:[0,-4,0]};
 const pick3=(v,st)=>Array.isArray(v)?v[st]:v;

@@ -227,7 +227,7 @@ body.menu #hud{display:none}
 .hudEmb{width:34px;height:34px;margin:0}
 .resCol{display:flex;flex-direction:column;gap:4px}
 .sbTag{display:none;order:2;font:700 15px var(--display);letter-spacing:.12em;text-transform:uppercase;color:#8dffb0;text-shadow:0 0 8px rgba(80,255,150,.35)}
-body.sandbox .sbTag{display:inline-block}body.sandbox #cr{display:none}body.sandbox #tray .bt .cs{font-size:0;padding:0}body.sandbox #tray .bt .cs::before{content:'FREE';font:700 10px var(--mono);color:#8dffb0;padding:0 4px}
+body.sandbox .sbTag{display:inline-block}body.sandbox #cr{display:none}#tabs .bt .cs.free{color:#8dffb0;font-weight:700}
 .crRow{display:flex;align-items:center;gap:5px}.crRow svg{width:18px;height:18px;filter:drop-shadow(0 0 5px rgba(196,107,255,.6))}
 #cr{font:600 19px var(--mono);color:#ffd27a;font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(230,176,67,.35);min-width:78px}
 .pwRow{display:flex;align-items:center;gap:5px}.pwRow svg{width:12px;height:12px;fill:var(--amber)}

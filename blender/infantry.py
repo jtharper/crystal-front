@@ -195,15 +195,15 @@ def weapon(K, f, role, P):
             for x in (6.4, 8.4): K.cylx(.65, .3, (x, y, 10.2), 'GLOW', 10, 0, grp=G)
         if f == 's': K.cylx(.55, 1.0, (10.2, y, 10.2), 'gun', 6, .05, grp=G)
     elif role == 'sniper':
-        L = {'v': 15.0, 's': 22.0, 'h': 14.0}[f]
+        L = {'v': 8.0, 's': 7.0, 'h': 7.5}[f]
         K.box((5.2, .8, 1.3), (2.2, y, 10.0), mat='gun' if f != 'v' else 'olive', bev=.15, grp=G)
         K.cylx(.28 if f != 's' else .34, L, (4.4 + L / 2, y, 10.2), 'dark' if f != 'h' else 'ceram', 8, 0, grp=G)
         K.cylx(.45, 4.0, (3.6, y, 11.3), 'dark', 10, .05, grp=G)                          # scope
         K.cylx(.55, .3, (5.5, y, 11.3), 'canopy' if f != 'h' else 'GLOW', 10, 0, grp=G)
-        K.cylx(.55, 1.2, (4.4 + L, y, 10.2), 'gun', 8, .05, grp=G)                         # muzzle brake
+        K.cylx(.55 if f != 's' else .75, 1.2 if f != 's' else 2.4, (4.4 + L + (0 if f != 's' else .6), y, 10.2), 'gun', 8, .05, grp=G)   # muzzle brake / Syndicate suppressor
         for s in (-1, 1): K.box((.15, .15, 2.0), (6.4, y + s * .4, 9.2), (s * R(25), 0, 0), 'steel', 0, grp=G)   # bipod
         if f == 'h':
-            for x in (8.0, 11.0, 14.0): K.cylx(.5, .3, (x, y, 10.2), 'GLOW', 10, 0, grp=G)
+            for x in (7.0, 9.0, 11.0): K.cylx(.5, .3, (x, y, 10.2), 'GLOW', 10, 0, grp=G)
     elif role == 'gren':
         if f == 'v':
             K.cylx(1.25, 5.5, (6.0, y, 10.0), 'gun', 12, .1, grp=G)
