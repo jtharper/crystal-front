@@ -11,7 +11,7 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
   "vars": {
     // sites allowed to open game connections (a host name, or a suffix starting with ".")
-    "ALLOWED_ORIGINS": "play.crystalfront.fun,.crystal-front.pages.dev,crystal-front.pages.dev,localhost,127.0.0.1"
+    "ALLOWED_ORIGINS": "crystalfront.fun,www.crystalfront.fun,play.crystalfront.fun,.crystal-front.pages.dev,crystal-front.pages.dev,localhost,127.0.0.1"
   },
   "observability": { "enabled": true }
 }
