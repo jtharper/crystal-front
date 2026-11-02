@@ -150,11 +150,11 @@ const ROLE={gren:['Heavy trooper, area damage','Infantry · Buildings','Tanks'],
 let selKey='',selRefs=[];
 let selBarOn=false,selBarOff='';
 function updSel(){
-  const chip=$('#selChip'),bar=$('#selBar'),list=sel.filter(e=>!e.dead&&e.side===ME);chip.hidden=true;
+  const chip=$('#selChip'),bar=$('#selBar'),list=sel.filter(e=>!e.dead&&(e.side===ME||(sel.length===1&&e.k==='b')));chip.hidden=true;
   if(!list.length||state!=='play'){bar.hidden=true;selBarOn=false;selKey='';selBarOff='';return}
-  const one=list.length===1?list[0]:null,pc=one&&one.k==='b'?({barracks:'i',factory:'v',airfield:'a'})[one.type]||null:null;
+  const one=list.length===1?list[0]:null,pc=one&&one.k==='b'&&one.side===ME?({barracks:'i',factory:'v',airfield:'a'})[one.type]||null:null;
   const us=list.filter(e=>e.k==='u'),bs=list.filter(e=>e.k==='b'),key=list.map(e=>e.id).join(',');
-  if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}else if(one&&one.k==='b'&&one.type==='shrine'){showTab('r');trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else if(bs.length&&DESK)buildBldBar(bs[0]);else selRefs=[]}
+  if(key!==selKey){selKey=key;if(pc){prodSel[pc]=one.id;showTab(pc);trayOpen=true}else if(one&&one.k==='b'&&one.side===ME&&one.type==='shrine'){showTab('r');trayOpen=true}selBarOff='';if(us.length)buildSelBar(us);else if(bs.length&&DESK)buildBldBar(bs[0]);else selRefs=[]}
   selBarOn=(us.length>0||(bs.length>0&&DESK))&&selBarOff!==key&&!place;bar.hidden=!selBarOn;
   for(const r of selRefs){
     if(r.bld){const b=r.bld,d=BDEF[b.type],f=Math.max(0,b.hp/b.mhp),sd=sides[b.side];
@@ -224,14 +224,15 @@ function buildSelBar(us){
 /* a selected structure: picture, what it does, health, status, Repair / Sell; production buildings show their queue */
 function buildBldBar(b){
   const sp=$('#selBar');selRefs=[];sp.classList.remove('sbTiles');sp.style.width='';
-  const d=BDEF[b.type],ro=ROLE[b.type]||[''],own=b.side===ME,canSell=own&&!d.cap&&b.type!=='yard',prod=b.type==='barracks'||b.type==='factory'||b.type==='airfield';
+  const d=BDEF[b.type],ro=ROLE[b.type]||[''],own=b.side===ME,canSell=own&&!d.cap&&b.type!=='yard',prod=own&&(b.type==='barracks'||b.type==='factory'||b.type==='airfield');
   const fight=d.dmg?`<div class="sbRow"><span class="lbl">Range</span><span class="sbV">${d.range} tiles</span></div><div class="sbRow"><span class="lbl">Damage</span><span class="sbV">${d.dmg} every ${d.rof}s</span></div>`:'';
   sp.innerHTML=`<div class="sbOne sbBld"><div class="sbPort"><img alt="" src="${thumb(b.type,skinOf(b.side),220)}"></div>
-    <div class="sbInfo"><div class="sbName">${d.name}</div><div class="sbRole">${ro[0]||''}</div>
+    <div class="sbInfo"><div class="sbName">${b.side>=0?nm(b.type,b.side):d.name}</div><div class="sbRole">${ro[0]||''}</div>
     <p class="sbDesc">${DESC[b.type]||''}</p>
     <div class="sbRow"><span class="lbl">Health</span><span class="sbV ht"></span></div><div class="hp hpm"><i></i></div>${fight}
     <div class="sbStat"></div>
     ${prod?`<div class="sbRow"><span class="lbl">Production</span></div><div class="sbQ"></div><div class="sbHint">${TOUCH?'Tap':'Right-click'} the ground to set its rally point</div>`:''}
+    ${own?'':`<div class="sbHint">${b.side<0?'Neutral: send an Engineer to capture it':d.cap?'Enemy-held: send an Engineer to take it back':'Enemy structure: '+nm(b.type,b.side)}</div>`}
     </div></div><button type="button" class="sbX" aria-label="Deselect">&#10005;</button>`;
   const rb=sp.querySelector('[data-a="rep"]'),sb=sp.querySelector('[data-a="sell"]');
   selRefs.push({bld:b,bar:sp.querySelector('.hpm i'),txt:sp.querySelector('.ht'),rep:rb,stat:sp.querySelector('.sbStat'),q:sp.querySelector('.sbQ')});

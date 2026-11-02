@@ -65,7 +65,9 @@ function pickScreen(sx,sy,pred){
 function selectAt(sx,sy,add,dbl){
   const e=pickScreen(sx,sy,e=>e.side===ME&&!e.dead);
   if(!add)sel=[];
-  if(!e)return;
+  /* nothing of yours there: a neutral or enemy structure can be selected on its own to read what it is */
+  if(!e){if(!add){const o=pickScreen(sx,sy,en=>en.k==='b'&&!en.dead&&en.side!==ME&&(en.side<0||visNow(en)));if(o){sel=[o];sfx('click')}}return}
+  if(sel.some(x=>x.side!==ME))sel=[];
   if(dbl&&e.k==='u'){
     for(const u of units){if(u.side!==ME||u.type!==e.type||u.dead||sel.includes(u))continue;const p=toScreen(u.x,uPickH(u),u.y);if(!p.behind&&p.x>=0&&p.x<=W&&p.y>=0&&p.y<=H)sel.push(u)}
     sfx('click');return;
@@ -159,7 +161,8 @@ cvs.addEventListener('pointerup',e=>{
     else if(own)selectAt(d.x,d.y,false,dbl);
     else if(sel.length===1&&isProd(sel[0])){setRally(sel[0],d.x,d.y);sel=[]}
     else if(sel.some(s=>s.k==='u'))command(d.x,d.y,false);
-    else sel=[];
+    else{/* neutral or enemy structure: select it to read what it is */
+      const o=pickScreen(d.x,d.y,en=>en.k==='b'&&!en.dead&&en.side!==ME&&(en.side<0||visNow(en)));sel=o?[o]:[];if(o)sfx('click')}
     return;
   }
   if(mode==='rift'){riftAt(d.x,d.y);mode=null;return}
