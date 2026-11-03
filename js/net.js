@@ -10,7 +10,9 @@ const NET={on:false,ws:null,slot:0,role:'',code:'',peer:false,state:'idle',delay
   hashes:new Map(),waitT:0,rtt:0,lobby:null,leaving:false,bgT:0,bgLast:0,ended:false};
 const OL_CODE_CH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function olNewCode(){let s='';for(let i=0;i<5;i++)s+=OL_CODE_CH[(vr()*OL_CODE_CH.length)|0];return s}
-function olBase(){const q=new URLSearchParams(location.search).get('mp');return q||((location.protocol==='https:'?'wss://':'ws://')+location.host)}
+/* the desktop app (served from app://) uses the live relay at crystalfront.us */
+const DESKTOP=location.protocol==='app:',SITE='https://crystalfront.us';
+function olBase(){const q=new URLSearchParams(location.search).get('mp');return q||(DESKTOP?'wss://crystalfront.us':(location.protocol==='https:'?'wss://':'ws://')+location.host)}
 function netSend(o){const ws=NET.ws;if(ws&&ws.readyState===1)ws.send(typeof o==='string'?o:JSON.stringify(o))}
 
 /* ---------- lockstep: called by the simulation ---------- */
@@ -163,7 +165,7 @@ function olRender(){
   $('#olJoin').addEventListener('click',()=>{sfx('click');olJoin()});
   $('#olCode').addEventListener('keydown',e=>{if(e.key==='Enter')olJoin()});
   $('#olName').addEventListener('input',e=>{LOBBY.name=e.target.value.slice(0,16)||'Commander';saveLobby();olMeChanged()});
-  $('#olCopy').addEventListener('click',()=>{const u=location.origin+location.pathname+'?join='+NET.code;
+  $('#olCopy').addEventListener('click',()=>{const u=(DESKTOP?SITE+'/':location.origin+location.pathname)+'?join='+NET.code;
     try{navigator.clipboard.writeText(u).then(()=>olHint('Invite link copied. Send it to your opponent.'),()=>olHint(u))}catch(e){olHint(u)}sfx('click')});
   $('#olMaps').addEventListener('click',e=>{const b=e.target.closest('.lbItem');if(!b||NET.slot!==0||!NET.lobby)return;NET.lobby.map=+b.dataset.v;pickMap=NET.lobby.map;olPush();sfx('click')});
   $('#olRows').addEventListener('change',e=>{const f=e.target.dataset.f,v=+e.target.value;

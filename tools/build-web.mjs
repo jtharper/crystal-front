@@ -15,7 +15,7 @@ const rel = (...p) => path.join(ROOT, ...p);
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, 'models'), { recursive: true });
-for (const d of ['css', 'js', 'tex']) fs.cpSync(rel(d), path.join(OUT, d), { recursive: true });
+for (const d of ['css', 'js', 'tex', 'fonts']) fs.cpSync(rel(d), path.join(OUT, d), { recursive: true });
 
 // --- models: only what the game references ---
 let glb = fs.readFileSync(rel('js', 'glb.js'), 'utf8');
@@ -74,6 +74,8 @@ fs.writeFileSync(path.join(OUT, '_headers'), `/models/*
   Cache-Control: public, max-age=31536000, immutable
 /tex/*
   Cache-Control: public, max-age=86400
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
 /vendor/*
   Cache-Control: public, max-age=604800
 /js/*

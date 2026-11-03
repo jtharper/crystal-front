@@ -1,0 +1,20 @@
+{
+  "name": "crystal-front",
+  "productName": "Crystal Front",
+  "version": "1.0.0",
+  "description": "Crystal Front - real-time strategy",
+  "main": "main.js",
+  "author": "JT Harper",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "prepare-app": "node prepare.mjs",
+    "start": "npm run prepare-app && electron .",
+    "pack:win": "npm run prepare-app && electron-packager . \"Crystal Front\" --platform=win32 --arch=x64 --out=out --overwrite --asar --ignore=\"^/out\" --ignore=\"^/node_modules\" --ignore=\"^/prepare.mjs\" --ignore=\"^/prune.mjs\" --ignore=\"^/.gitignore\" --ignore=\"^/README.md\" --app-copyright=\"JT Harper\" && node prune.mjs",
+    "pack:linux": "npm run prepare-app && electron-packager . \"Crystal Front\" --platform=linux --arch=x64 --out=out --overwrite --asar --ignore=\"^/out\" --ignore=\"^/node_modules\" --ignore=\"^/prepare.mjs\" --ignore=\"^/prune.mjs\" --ignore=\"^/.gitignore\" --ignore=\"^/README.md\" --app-copyright=\"JT Harper\" && node prune.mjs"
+  },
+  "devDependencies": {
+    "electron": "44.7.2",
+    "@electron/packager": "20.3.0"
+  }
+}

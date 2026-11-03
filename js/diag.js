@@ -8,7 +8,10 @@ const DIAG={on:/[?&]perf\b/.test(location.search),el:null,last:performance.now()
   if(DIAG.soft){
     /* the browser is drawing on the CPU: the game cannot run smoothly like this, so say so plainly and keep effects minimal */
     const w=document.createElement('div');w.id='gpuWarn';
-    w.innerHTML='<b>Your browser is not using your graphics card</b> ('+DIAG.gpu.replace(/[<>&]/g,'')+'), so the game will be very slow.'+
+    w.innerHTML=location.protocol==='app:'
+      ?'<b>Crystal Front is not using your graphics card</b> ('+DIAG.gpu.replace(/[<>&]/g,'')+'), so the game will be very slow.'+
+       '<br>Update your graphics driver from NVIDIA, AMD or Intel, then restart the game. <button type="button">Dismiss</button>'
+      :'<b>Your browser is not using your graphics card</b> ('+DIAG.gpu.replace(/[<>&]/g,'')+'), so the game will be very slow.'+
       '<br>In Chrome or Edge: Settings &rsaquo; System &rsaquo; turn on <i>Use graphics acceleration when available</i>, then restart the browser. '+
       'Check <code>chrome://gpu</code> &mdash; WebGL should say &ldquo;Hardware accelerated&rdquo;. <button type="button">Dismiss</button>';
     Object.assign(w.style,{position:'fixed',left:'50%',top:'12px',transform:'translateX(-50%)',zIndex:9999,maxWidth:'640px',background:'rgba(60,10,6,.95)',color:'#ffe9e2',
